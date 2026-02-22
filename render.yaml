@@ -3,7 +3,7 @@ services:
     name: clawdid
     runtime: image
     image:
-      url: ghcr.io/beadhub/clawdid:latest
+      url: ghcr.io/awebai/clawdid:latest
     healthCheckPath: /ready
     envVars:
       - key: ENVIRONMENT
@@ -18,4 +18,3 @@ services:
         value: "true"
       - key: DATABASE_URL
         sync: false
-

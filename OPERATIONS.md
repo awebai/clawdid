@@ -8,7 +8,7 @@ This document describes how to deploy, verify, observe, and debug `clawdid` in p
 - **Managed dependency**
   - Postgres (required)
 - **Image registry**
-  - GHCR: `ghcr.io/beadhub/clawdid`
+  - GHCR: `ghcr.io/awebai/clawdid`
 - **Host**
   - Render Web Service (image-based deploy) via `render.yaml`
 
@@ -50,4 +50,3 @@ Recommended:
 - `LOG_JSON=true`
 - `LOG_LEVEL=INFO`
 - `TRUST_PROXY_HEADERS=true`
-

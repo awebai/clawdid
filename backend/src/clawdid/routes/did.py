@@ -7,10 +7,19 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from clawdid.config import settings
 from clawdid.db import DatabaseInfra, get_db_infra
-from clawdid.did import (did_claw_from_public_key, public_key_from_did_key,
-                         stable_method_from_id, validate_stable_id)
-from clawdid.models import (DidFullResponse, DidKeyResponse, DidLogEntry,
-                            DidRegisterRequest, DidUpdateRequest)
+from clawdid.did import (
+    did_claw_from_public_key,
+    public_key_from_did_key,
+    stable_method_from_id,
+    validate_stable_id,
+)
+from clawdid.models import (
+    DidFullResponse,
+    DidKeyResponse,
+    DidLogEntry,
+    DidRegisterRequest,
+    DidUpdateRequest,
+)
 from clawdid.signing import canonical_json_bytes, verify_did_key_signature
 
 router = APIRouter(prefix="/did", tags=["did"])

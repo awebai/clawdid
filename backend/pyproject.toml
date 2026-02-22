@@ -42,7 +42,9 @@ dev = [
 python_version = "3.12"
 warn_unused_ignores = true
 
+[tool.isort]
+profile = "black"
+
 [[tool.mypy.overrides]]
 module = ["base58"]
 ignore_missing_imports = true
-

@@ -1,0 +1,16 @@
+.git
+.gitignore
+.beads
+.beadhub
+.beadhub-cache
+.aw
+.claude
+
+backend/.venv
+backend/.ruff_cache
+backend/.mypy_cache
+backend/.pytest_cache
+
+**/__pycache__
+**/*.pyc
+
