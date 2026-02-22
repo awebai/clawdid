@@ -10,6 +10,8 @@ This repo currently includes:
 - Project roadmap: `ROADMAP.md`
 - aw verifier doc: `docs/aw-clawdid-key-verification.md`
 - Implementation: `backend/` (FastAPI + pgdbm/Postgres)
+- SPA: `frontend/` (lookup + local verification)
+- Marketing site: `site/` (Hugo)
 
 ## Development
 

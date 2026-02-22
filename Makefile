@@ -1,8 +1,8 @@
 # ABOUTME: Development commands for clawdid
 # ABOUTME: Run `make help` to see available targets
 
-.PHONY: help dev-backend dev-stop status api-smoke quality-gates \
-        test lint lint-types format check \
+.PHONY: help dev dev-backend dev-frontend dev-site dev-stop status api-smoke quality-gates \
+        test lint lint-types format check frontend-install frontend-build site-build \
         dev-db-up dev-db-down dev-db-reset \
         docker-validate local-container local-container-down
 
@@ -22,6 +22,8 @@ endif
 #   aweb-cloud     5180/8008
 #   claweb         5177/8005
 CLAWDID_PORT ?= 18111
+VITE_PORT ?= 18113
+SITE_PORT ?= 18114
 DEV_POSTGRES_PORT ?= 15489
 LOCAL_POSTGRES_PORT ?= 15490
 LOCAL_API_PORT ?= 18112
@@ -43,7 +45,10 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev-db-up         Start local Postgres container (port $(DEV_POSTGRES_PORT))"
+	@echo "  make dev              Start backend + SPA together"
 	@echo "  make dev-backend       Start backend server (port $(CLAWDID_PORT))"
+	@echo "  make dev-frontend      Start SPA dev server (port $(VITE_PORT))"
+	@echo "  make dev-site          Start Hugo marketing site (port $(SITE_PORT))"
 	@echo "  make dev-stop          Stop dev server (kill ports)"
 	@echo "  make status            Show status"
 	@echo "  make api-smoke         Quick reachability checks"
@@ -54,6 +59,8 @@ help:
 	@echo "  make lint-types        Run mypy"
 	@echo "  make format            Format code"
 	@echo "  make check             Format + lint + typecheck + test"
+	@echo "  make frontend-build    Build SPA bundle"
+	@echo "  make site-build        Build marketing site"
 	@echo ""
 	@echo "Local Container Stack (release image + local Postgres):"
 	@echo "  make docker-validate   Validate docker-compose files"
@@ -62,9 +69,19 @@ help:
 	@echo ""
 	@echo "Ports:"
 	@echo "  clawdid dev backend:          $(CLAWDID_PORT)"
+	@echo "  clawdid spa dev server:       $(VITE_PORT)"
+	@echo "  clawdid site dev server:      $(SITE_PORT)"
 	@echo "  clawdid dev postgres:         $(DEV_POSTGRES_PORT)"
 	@echo "  clawdid local-container api:  $(LOCAL_API_PORT)"
 	@echo "  clawdid local-container pg:   $(LOCAL_POSTGRES_PORT)"
+
+dev:
+	@echo "Starting backend on http://127.0.0.1:$(CLAWDID_PORT) and SPA on http://localhost:$(VITE_PORT)"
+	@echo "  Press Ctrl-C to stop both."
+	@trap 'kill 0' EXIT; \
+		( cd backend && DATABASE_URL="$(DATABASE_URL)" uv run uvicorn clawdid.main:app --reload --port $(CLAWDID_PORT) ) & \
+		( cd frontend && pnpm install && VITE_PORT=$(VITE_PORT) pnpm run dev -- --port $(VITE_PORT) ) & \
+		wait
 
 dev-db-up:
 	@echo "Starting dev Postgres on localhost:$(DEV_POSTGRES_PORT) (DB=$(POSTGRES_DB), user=$(POSTGRES_APP_USER))..."
@@ -91,9 +108,22 @@ dev-backend:
 	@echo "  DB:     $(DATABASE_URL)"
 	cd backend && DATABASE_URL="$(DATABASE_URL)" uv run uvicorn clawdid.main:app --reload --port $(CLAWDID_PORT)
 
+frontend-install:
+	cd frontend && pnpm install
+
+dev-frontend:
+	@echo "Starting SPA on http://localhost:$(VITE_PORT)"
+	cd frontend && pnpm install && VITE_PORT=$(VITE_PORT) pnpm run dev -- --port $(VITE_PORT)
+
+dev-site:
+	@echo "Starting marketing site on http://localhost:$(SITE_PORT)"
+	cd site && pnpm install && hugo server --port $(SITE_PORT) --bind 127.0.0.1
+
 dev-stop:
 	-@lsof -ti :$(CLAWDID_PORT) | xargs kill 2>/dev/null || true
 	-@lsof -ti :$(LOCAL_API_PORT) | xargs kill 2>/dev/null || true
+	-@lsof -ti :$(VITE_PORT) | xargs kill 2>/dev/null || true
+	-@lsof -ti :$(SITE_PORT) | xargs kill 2>/dev/null || true
 	@echo "Stopped dev servers (if running)."
 
 status:
@@ -135,6 +165,12 @@ format:
 check:
 	cd backend && make check
 
+frontend-build:
+	cd frontend && pnpm install && pnpm run build
+
+site-build:
+	cd site && hugo --minify
+
 docker-validate:
 	DEV_POSTGRES_PORT=15489 POSTGRES_DB=clawdid_dev POSTGRES_APP_USER=clawdid docker compose -f "$(DEV_DB_COMPOSE)" config >/dev/null
 	ENV_FILE=.env.local-container.example LOCAL_IMAGE="$(LOCAL_IMAGE):latest" docker compose --env-file .env.local-container.example -f "$(LOCAL_COMPOSE)" config >/dev/null
@@ -155,4 +191,3 @@ local-container-down:
 		env_file="$(LOCAL_ENV_FILE)"; \
 		if [ ! -f "$$env_file" ]; then env_file=".env.local-container.example"; fi; \
 		ENV_FILE="$$env_file" LOCAL_IMAGE="$(LOCAL_IMAGE):latest" docker compose --env-file "$$env_file" -f "$(LOCAL_COMPOSE)" down
-

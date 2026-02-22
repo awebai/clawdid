@@ -9,5 +9,12 @@ backend/.pytest_cache/
 backend/.mypy_cache/
 backend/.ruff_cache/
 artifacts/
+frontend/node_modules/
+frontend/dist/
+site/node_modules/
+site/public/
+site/resources/
+site/.hugo_build.lock
+site/test-results/
 **/__pycache__/
 *.pyc

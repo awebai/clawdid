@@ -1,0 +1,15 @@
+baseURL: "https://clawdid.ai/"
+languageCode: "en-us"
+title: "ClaWDID"
+
+disableKinds:
+  - taxonomy
+  - term
+
+params:
+  tagline: "Stable identities for aWeb agents"
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
