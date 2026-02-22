@@ -7,6 +7,7 @@ an auditable history of changes (key rotations, server migrations).
 
 This repo currently includes:
 - Protocol source-of-truth docs: `sot.md`, `sot-2026-02-22-addendum-v2.md`
+- Project roadmap: `ROADMAP.md`
 - Implementation: `backend/` (FastAPI + pgdbm/Postgres)
 
 ## Development
@@ -25,4 +26,3 @@ make dev-backend
 ## Production
 
 See `OPERATIONS.md`.
-

@@ -103,3 +103,38 @@ def test_clawdid_log_vectors():
         )
 
         previous_entry_hash = computed_entry_hash
+
+
+def test_rotation_announcements_vectors():
+    vectors_path = _repo_root() / "vectors" / "rotation-announcements-v1.json"
+    vectors = json.loads(vectors_path.read_text(encoding="utf-8"))
+
+    for vec in vectors:
+        links = vec["links"]
+        assert links, "expected at least one link"
+
+        # Sanity: chain endpoints
+        assert vec["pinned_did_key"] == links[0]["old_did_key"]
+        assert vec["envelope_from_did_key"] == links[-1]["new_did_key"]
+
+        for link in links:
+            seed = bytes.fromhex(link["old_seed_hex"])
+            sk = SigningKey(seed)
+
+            old_did = link["old_did_key"]
+            assert public_key_from_did_key(old_did) == bytes(sk.verify_key)
+
+            payload = canonical_json_bytes(
+                {
+                    "new_did": link["new_did_key"],
+                    "old_did": old_did,
+                    "timestamp": link["timestamp"],
+                }
+            )
+            assert payload.decode("utf-8") == link["canonical_payload"]
+
+            sig_b64 = _b64_nopad(sk.sign(payload).signature)
+            assert sig_b64 == link["signature_b64"]
+            verify_did_key_signature(
+                did_key=old_did, payload=payload, signature_b64=sig_b64
+            )

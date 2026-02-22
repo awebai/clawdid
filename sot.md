@@ -244,9 +244,10 @@ Alice ——[publish]——→ ClaWDID ←——[resolve]—— Bob
 
 - Bob can resolve Alice's address through ClaWDID independently of the relay server.
 - `aw` cross-checks: the DID from ClaWDID must match the DID in the message. If they disagree, hard error.
-- ClaWDID maintains a transparency log. Key rotations, server changes, and retirement are logged and signed. Anyone can audit.
-- **What this adds over Phase 1:** The server can no longer forge a first-contact introduction without also compromising ClaWDID. Both services must be compromised simultaneously, and ClaWDID compromise is visible in the transparency log.
-- **Honest statement for users:** "Message relay and identity verification are independent services. Key changes are publicly logged and auditable."
+- ClaWDID maintains a **per-identity append-only audit log** (hash-chained, signed entries). Anyone can audit *a presented history* offline.
+- **What this adds over Phase 1:** For agents that publish a stable identity, ClaWDID provides an independent, signed second opinion on the current `did:key`. A compromised aweb server can no longer silently swap an existing stable identity’s key *without also* (a) compromising ClaWDID, or (b) causing a detectable mismatch against ClaWDID’s published log head.
+  - **Important limitation (pre-transparency):** A per-identity log does **not** prevent ClaWDID itself from equivocation (split-view) without an external witnessing/checkpoint mechanism. This is planned but not part of the launch scope.
+- **Honest statement for users:** "Message relay and identity verification are independent services. Key changes are logged and auditable (per identity). Global transparency is a planned upgrade."
 
 ### 3.3 Phase 3: Full sovereignty with did:web
 
@@ -475,6 +476,7 @@ Canonicalization MUST be compatible with RFC 8785 (JSON Canonicalization Scheme 
 | `signature` | string | No | Base64-encoded Ed25519 signature |
 | `signing_key_id` | string | No | DID of the signing key |
 | `rotation_announcement` | object | No | Present after key rotation (see §5.4). Contains `old_did`, `new_did`, `timestamp`, `old_key_signature`. |
+| `rotation_announcements` | array | No | Optional chain form for multiple rotations (see §5.4). Each entry has the same fields as `rotation_announcement` and is ordered oldest → newest. |
 
 **Protocol evolution rule:** New fields are additive and optional. Existing fields are never removed or renamed. Receivers ignore unknown fields.
 
@@ -521,8 +523,8 @@ Output: one of VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED (no DID),
    a. No pin for this from address → store new pin. VERIFIED (or VERIFIED_CUSTODIAL).
    b. Pin exists, DID matches → VERIFIED (or VERIFIED_CUSTODIAL).
    c. Pin exists, DID does not match →
-      i.  Check for rotation_announcement in envelope (see §5.4).
-          If present and old-key signature is valid → auto-accept.
+      i.  Check for `rotation_announcements` (plural) or `rotation_announcement` (singular) in envelope (see §5.4).
+          If present and the old-key signature chain is valid → auto-accept.
           Update pin. Log rotation. VERIFIED (or VERIFIED_CUSTODIAL).
       ii. No valid announcement → IDENTITY_MISMATCH.
           Warn operator (see §4.5). Do not deliver until operator decides.
@@ -752,7 +754,7 @@ The server must support the following before launch:
 **Agent log:**
 - `GET /api/agents/{did}/log` returns the rotation and status history for an agent
 - Each log entry is signed by the key that authorized the change
-- This provides ClaWDID-like transparency at the server level, available even before ClaWDID is deployed
+- This provides ClaWDID-like *auditability* at the server level, available even before ClaWDID is deployed
 - Ephemeral agents: log is minimal (creation and deregistration only)
 
 **Agent deregistration (ephemeral agents):**
@@ -957,7 +959,7 @@ Alice rotates her signing key
    rotation announcements below for automatic resolution.
 ```
 
-**Rotation announcements:**
+**Rotation announcements (single and chained):**
 
 A bare key rotation would trigger IDENTITY_MISMATCH warnings on every peer who has pinned the agent. A routine precautionary rotation by Alice would produce dozens of scary interactive prompts across the network, each indistinguishable from a compromise. This discourages rotation, which is the opposite of the desired behavior.
 
@@ -969,14 +971,33 @@ To fix this, the first message sent with a new key includes a **rotation announc
     "old_did": "did:key:z6MkhaXgBZDvotDkL...",
     "new_did": "did:key:z6MkrT4JxdNewKey...",
     "timestamp": "2026-06-01T12:00:00Z",
-    "old_key_signature": "base64-sig-of-new-did-by-old-key"
+    "old_key_signature": "base64-sig-by-old-key"
   }
 }
 ```
 
-The `old_key_signature` is the old key's Ed25519 signature over the canonical JSON of `{"new_did":"did:key:z6MkrT4JxdNewKey...","old_did":"did:key:z6MkhaXgBZDvotDkL...","timestamp":"2026-06-01T12:00:00Z"}`.
+If multiple key rotations occur before a peer sees the first rotation, senders MAY include a chained form:
 
-When the receiver encounters an IDENTITY_MISMATCH and the message includes a rotation announcement:
+```json
+{
+  "rotation_announcements": [
+    {"old_did":"did:key:z6MkOld0...","new_did":"did:key:z6MkOld1...","timestamp":"2026-06-01T12:00:00Z","old_key_signature":"..."},
+    {"old_did":"did:key:z6MkOld1...","new_did":"did:key:z6MkOld2...","timestamp":"2026-06-02T12:00:00Z","old_key_signature":"..."}
+  ]
+}
+```
+
+Compatibility rule: `rotation_announcement` (singular) remains valid and is treated as a single-element chain. New implementations should prefer `rotation_announcements` when attaching more than one link.
+
+The `old_key_signature` is the old key's Ed25519 signature over the canonical JSON of:
+
+```json
+{"new_did":"did:key:...","old_did":"did:key:...","timestamp":"2026-06-01T12:00:00Z"}
+```
+
+Canonicalization rules are identical to message signing (§4.2): lexicographic key sort, compact separators, literal UTF-8, and standard base64 **without padding** for signatures. Conformance vectors for rotation announcements are published in `vectors/rotation-announcements-v1.json`.
+
+When the receiver encounters an IDENTITY_MISMATCH and the message includes a rotation announcement (singular):
 
 ```
 1. Extract old_did from the announcement.
@@ -985,6 +1006,21 @@ When the receiver encounters an IDENTITY_MISMATCH and the message includes a rot
 4. Verify old_key_signature against the canonical rotation payload.
 5. If valid → auto-accept: update pin to new_did, log the rotation, deliver message.
 6. If invalid → hard IDENTITY_MISMATCH warning as before.
+```
+
+When the receiver encounters an IDENTITY_MISMATCH and the message includes `rotation_announcements` (plural), it verifies the chain:
+
+```
+Input: pinned_did (old), envelope.from_did (new), links[] (oldest → newest)
+
+1. Set expected_old = pinned_did.
+2. For each link in links:
+   a. Require link.old_did == expected_old.
+   b. Verify link.old_key_signature against canonical rotation payload using link.old_did.
+   c. Set expected_old = link.new_did.
+3. Require expected_old == envelope.from_did.
+4. If all checks pass → update pin to envelope.from_did, log rotation chain, deliver.
+5. If any check fails → treat as IDENTITY_MISMATCH (manual operator decision).
 ```
 
 This means:
@@ -1095,7 +1131,7 @@ Custodial agents (dashboard-created) follow the same model — the server genera
 
 ## 7. What we are NOT building
 
-- **Not a blockchain.** ClaWDID (when built) is a hosted service with a transparency log, not a distributed ledger.
+- **Not a blockchain.** ClaWDID (when built) is a hosted service with an append-only audit log, not a distributed ledger.
 - **Not a full W3C DID implementation.** We use `did:key` (a W3C method) and adopt the DID document format for ClaWDID. We do not implement the full DID resolution spec or Verifiable Credentials.
 - **Not a certificate authority.** No certificates, no hierarchical trust chains. Trust is peer-to-peer.
 - **Not inventing a DID method for launch.** `did:key` is a standardized, existing method with library support in Go, JavaScript, Python, and Rust. We use it as-is.
@@ -1115,7 +1151,7 @@ All items below. ClaWDID is explicitly excluded.
 - Signature verification on received messages (§4.3) — offline, from DID
 - Identity resolver interface with `DIDKeyResolver`, `ServerResolver`, `PinResolver`, `ChainResolver` (§4.4)
 - Lifetime-aware TOFU: pin persistent agents, skip ephemeral agents (§4.5)
-- Rotation announcement verification: auto-accept announced rotations (§4.3, §5.4)
+- Rotation announcement verification: auto-accept announced rotations (single or chained) (§4.3, §5.4)
 - `aw introspect` shows DID, custody mode, lifetime, public key (§4.7)
 - Agent retirement with successor: `aw agent retire --successor` (§5.2, persistent only)
 - Key rotation: `aw did rotate-key` and `aw did rotate-key --self-custody` (§5.4, persistent only)
@@ -1126,7 +1162,7 @@ All items below. ClaWDID is explicitly excluded.
 - Ephemeral agent creation: custodial, with deregistration endpoint (§4.1, §4.6)
 - Agent resolution endpoint returns DID, public_key, custody, lifetime (§4.6)
 - Key rotation endpoint with signature verification (§4.6, persistent only)
-- Rotation announcement injection: attach announcement to outgoing messages for 24h post-rotation (§5.4)
+- Rotation announcement injection: attach announcement(s) to outgoing messages for 24h post-rotation (§5.4)
 - Agent retirement endpoint with successor linking (§5.2, persistent only)
 - Agent deregistration endpoint with keypair destruction (§4.6, ephemeral)
 - Per-agent log endpoint: rotation history, retirement, signed entries (§4.6)
@@ -1139,7 +1175,7 @@ Deploy when the value of independent address resolution and cross-checking outwe
 **ClaWDID service:**
 - Agent metadata store (DID → address, handle, server, custody, status)
 - Address resolution (namespace/alias → current DID)
-- Append-only transparency log (all mutations signed and sequenced)
+- Append-only audit log (all mutations signed and sequenced)
 - Per-agent audit log endpoint
 - Registration and update endpoints
 
@@ -1147,7 +1183,7 @@ Deploy when the value of independent address resolution and cross-checking outwe
 - `ClaWDIDResolver` implementation
 - Cross-check server-reported DID against ClaWDID on resolution
 - Publish metadata to ClaWDID at registration (if available)
-- `aw did log` command to view transparency log for an agent
+- `aw did log` command to view audit log for an agent
 - TOFU warnings include ClaWDID log URL when available
 
 **aweb server additions:**
@@ -1222,6 +1258,6 @@ Agents have two independent properties: **custody** (who holds the signing key) 
 
 For persistent agents, trust flows through the agent's DID — TOFU pinning, key rotation warnings, succession links. For ephemeral agents, trust flows through project membership — the human operator controls who joins the project, and the agent's individual DID provides per-session auditability.
 
-Addresses are human-readable and immutable (persistent) or reusable (ephemeral). DIDs are cryptographic and change on key rotation or agent replacement. ClaWDID (when deployed) provides address-to-DID resolution, cross-checking against server-reported identity, and an auditable transparency log — for persistent agents that benefit from it.
+Addresses are human-readable and immutable (persistent) or reusable (ephemeral). DIDs are cryptographic and change on key rotation or agent replacement. ClaWDID (when deployed) provides address-to-DID resolution, cross-checking against server-reported identity, and an auditable per-identity log — for persistent agents that benefit from it.
 
 The architecture requires no infrastructure for its core security property (offline signature verification). ClaWDID and cross-server messaging add progressive layers of trust and functionality without changing the base protocol. Nothing built at launch needs to be rebuilt later.

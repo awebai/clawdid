@@ -25,6 +25,10 @@ These vectors exist to prevent subtle cross-language drift (Python ↔ Go) in:
 - `stable-id-v1.json`
   - `did:key` → stable ID derivation vectors
 
+- `rotation-announcements-v1.json`
+  - Canonical rotation-announcement payloads (single link + chaining)
+  - Expected Ed25519 signatures (standard base64, **no padding**)
+
 ## Encoding notes
 
 - **Canonical JSON:** lexicographic key sort, compact separators, literal UTF-8 (no `\uXXXX` escapes).
@@ -38,4 +42,3 @@ The backend test suite validates these vectors:
 cd backend
 make test
 ```
-

@@ -158,11 +158,28 @@ PUT    /did/{did_claw}         Update mapping (key rotation, server migration �
 ```json
 {
   "did_claw": "did:claw:7Fq3xB...",
-  "current_did_key": "did:key:z6MkAlice..."
+  "current_did_key": "did:key:z6MkAlice...",
+  "log_head": {
+    "seq": 2,
+    "operation": "rotate_key",
+    "previous_did_key": "did:key:z6MkOldAlice...",
+    "new_did_key": "did:key:z6MkAlice...",
+    "prev_entry_hash": "hex...",
+    "entry_hash": "hex...",
+    "state_hash": "hex...",
+    "authorized_by": "did:key:z6MkOldAlice...",
+    "timestamp": "2026-06-01T12:00:00Z",
+    "signature": "base64..."
+  }
 }
 ```
 
-This reveals nothing except which `did:key` a `did:claw` currently points to. You must already have the `did:claw` to query it.
+This reveals the current `did:key` **plus a verifiable commitment** to the latest mutation log entry:
+- `signature` verifies offline against `authorized_by` (a `did:key`).
+- `entry_hash` and `prev_entry_hash` allow lightweight hash-chain continuity checks.
+- `state_hash` commits to the full mapping state (including server/address/handle) **without revealing it**.
+
+This does leak minimal metadata (e.g. the latest `seq` and `timestamp`) to anyone who already knows the `did:claw`. That is an acceptable tradeoff for making `/key` responses cryptographically checkable without requiring `GET /log`.
 
 **`GET /did/{did_claw}/full`** — returns server URL, address, handle. Requires authentication (requesting agent presents their own `did:key` + signature). Prevents unauthenticated enumeration of agent locations.
 
@@ -203,6 +220,8 @@ This reveals nothing except which `did:key` a `did:claw` currently points to. Yo
 ```
 
 There is no global log endpoint. Per-DID logs provide sufficient auditability without enabling mass enumeration.
+
+**Security note (normative):** At launch, ClaWDID provides a *self-verifying per-identity* log (hash chain + signed entries), but it is **not yet** a full transparency system. In particular, without an external witnessing/checkpoint mechanism, ClaWDID can theoretically equivocate (serve different log heads to different verifiers). This limitation must be documented honestly in user-facing materials. A transparency/witness roadmap is included in this repo.
 
 ---
 
@@ -673,9 +692,10 @@ On receiving a message or resolving an agent:
 If agent has a did:claw (from_stable_id present):
   Key the pin by did:claw
   If did:key changed:
-    → Check ClaWDID: is the rotation logged?
-    → If logged: update pin silently (legitimate rotation)
-    → If NOT logged: WARN (possible compromise or stale cache)
+    → Fetch `GET /did/{did_claw}/key`
+    → Verify `log_head.signature` offline against `log_head.authorized_by` (a did:key)
+    → If ClaWDID current key == message key and log head verifies: update pin silently
+    → If ClaWDID still maps to old key: WARN + reject (possible compromise)
     → If ClaWDID unreachable: WARN with note about degraded verification
 
 If agent has no did:claw (from_stable_id absent):
@@ -692,7 +712,7 @@ If agent has no did:claw (from_stable_id absent):
 ℹ️  Key rotated for acme/monitor (did:claw:Qm9iJ3x...)
    Previous: did:key:z6MkOld...
    Current:  did:key:z6MkNew...
-   Rotation verified via ClaWDID transparency log.
+   Rotation verified via ClaWDID audit log head.
    Pin updated.
 ```
 No human action required.
@@ -703,7 +723,7 @@ No human action required.
    Previous: did:key:z6MkOld...
    Message:  did:key:z6MkSuspicious...
    ClaWDID still maps to: did:key:z6MkOld...
-   This key change is NOT recorded in the transparency log.
+   This key change is NOT recorded in the ClaWDID audit log.
    The message may be forged. Rejecting.
 ```
 

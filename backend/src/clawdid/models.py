@@ -21,9 +21,23 @@ class DidRegisterRequest(BaseModel):
     proof: str = Field(..., max_length=2048)
 
 
+class DidKeyEvidence(BaseModel):
+    seq: int
+    operation: str
+    previous_did_key: Optional[str]
+    new_did_key: str
+    prev_entry_hash: Optional[str]
+    entry_hash: str
+    state_hash: str
+    authorized_by: str
+    signature: str
+    timestamp: str
+
+
 class DidKeyResponse(BaseModel):
     did_claw: str
     current_did_key: str
+    log_head: Optional[DidKeyEvidence] = None
 
 
 class DidFullResponse(BaseModel):

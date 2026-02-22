@@ -15,6 +15,7 @@ from clawdid.did import (
 )
 from clawdid.models import (
     DidFullResponse,
+    DidKeyEvidence,
     DidKeyResponse,
     DidLogEntry,
     DidRegisterRequest,
@@ -220,8 +221,37 @@ async def get_key(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="not found")
+    head = await db.fetch_one(
+        """
+        SELECT seq, operation, previous_did_key, new_did_key,
+               prev_entry_hash, entry_hash, state_hash, authorized_by, signature,
+               timestamp
+        FROM {{tables.did_claw_log}}
+        WHERE did_claw = $1
+        ORDER BY seq DESC
+        LIMIT 1
+        """,
+        did_claw,
+    )
+    if head is None:
+        raise HTTPException(status_code=500, detail="log missing for did_claw")
+    if head["new_did_key"] != row["current_did_key"]:
+        raise HTTPException(status_code=500, detail="mapping/log inconsistency")
     return DidKeyResponse(
-        did_claw=row["did_claw"], current_did_key=row["current_did_key"]
+        did_claw=row["did_claw"],
+        current_did_key=row["current_did_key"],
+        log_head=DidKeyEvidence(
+            seq=head["seq"],
+            operation=head["operation"],
+            previous_did_key=head["previous_did_key"],
+            new_did_key=head["new_did_key"],
+            prev_entry_hash=head["prev_entry_hash"],
+            entry_hash=head["entry_hash"],
+            state_hash=head["state_hash"],
+            authorized_by=head["authorized_by"],
+            signature=head["signature"],
+            timestamp=head["timestamp"],
+        ),
     )
 
 
