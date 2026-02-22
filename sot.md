@@ -428,7 +428,7 @@ Rules:
 - No trailing commas
 - UTF-8 encoding, no BOM
 
-Canonicalization MUST be compatible with RFC 8785 (JSON Canonicalization Scheme / JCS). Implementations MUST publish and test against conformance vectors (canonical payload bytes + expected signature) to ensure cross-language compatibility.
+Canonicalization MUST be compatible with RFC 8785 (JSON Canonicalization Scheme / JCS). Implementations MUST publish and test against conformance vectors (canonical payload bytes + expected signature) to ensure cross-language compatibility. This repo publishes vectors in `vectors/message-signing-v1.json` (message signing) and `vectors/stable-id-v1.json` (stable ID derivation).
 
 #### Signature computation (normative)
 

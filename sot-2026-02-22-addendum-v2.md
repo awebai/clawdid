@@ -106,6 +106,8 @@ did_claw_log:
 
 The audit trail must be **self-verifying**: given only the `GET /did/{did_claw}/log` output, any verifier can (a) recompute each `entry_hash`, (b) verify each `signature` against `authorized_by` (a `did:key`), and (c) verify the hash-chain via `prev_entry_hash`.
 
+This repo publishes deterministic conformance vectors for this section in `vectors/clawdid-log-v1.json`.
+
 **Mapping state hash (normative):**
 
 `state_hash` is `sha256(canonical_json(mapping_state))`, where `mapping_state` is:
