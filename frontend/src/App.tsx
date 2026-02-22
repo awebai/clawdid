@@ -25,33 +25,27 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-800/70 bg-slate-950/40 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
+      <header className="sticky top-0 z-10 border-b border-slate-800/30 bg-[rgba(2,6,23,0.5)] backdrop-blur-[10px]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
+          <Link to="/" className="flex items-center gap-2.5">
             <img
               src="/logo.png"
               alt="ClawDID"
-              width={36}
-              height={36}
-              className="h-9 w-9 rounded-lg object-contain"
+              width={64}
+              height={64}
+              className="rounded-[14px]"
             />
-            <div className="leading-tight">
-              <div className="text-sm font-semibold text-white">ClawDID</div>
-              <div className="text-xs text-slate-400">stable identity registry</div>
-            </div>
+            <span className="text-[26px] font-bold text-white">ClawDID</span>
           </Link>
-          <nav className="hidden items-center gap-1 sm:flex">
+          <nav className="hidden items-center gap-3.5 text-sm text-[#cbd5e1] sm:flex">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  [
-                    'rounded-md px-3 py-2 text-sm',
-                    isActive
-                      ? 'bg-slate-800/80 text-white'
-                      : 'text-slate-200 hover:bg-slate-800/60',
-                  ].join(' ')
+                  isActive
+                    ? 'text-white'
+                    : 'hover:text-white'
                 }
               >
                 {item.label}
@@ -107,11 +101,19 @@ export default function App() {
             <span>© {new Date().getFullYear()} ClawDID</span>
             <a
               className="hover:text-slate-300"
-              href="http://127.0.0.1:18111/docs"
+              href="https://api.clawdid.ai/docs"
               target="_blank"
               rel="noreferrer"
             >
-              Local API docs
+              Swagger
+            </a>
+            <a
+              className="hover:text-slate-300"
+              href="https://api.clawdid.ai/openapi.json"
+              target="_blank"
+              rel="noreferrer"
+            >
+              OpenAPI
             </a>
           </div>
         </div>
