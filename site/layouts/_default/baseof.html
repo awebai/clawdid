@@ -7,12 +7,20 @@
     <meta name="description" content="{{ .Site.Params.tagline }}" />
     <meta name="theme-color" content="#070a12" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="{{ "img/logo.png" | absURL }}" />
+    <link rel="apple-touch-icon" href="{{ "img/logo-white-bg.png" | absURL }}" />
+    <meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} · {{ .Site.Title }}{{ end }}" />
+    <meta property="og:description" content="{{ .Site.Params.tagline }}" />
+    <meta property="og:image" content="{{ "img/logo-white-bg.png" | absURL }}" />
     <link rel="stylesheet" href="/css/main.css" />
   </head>
   <body>
     <header class="header">
       <div class="container header-inner">
-        <a class="brand" href="/">{{ .Site.Title }}</a>
+        <a class="brand" href="/">
+          <img class="brand-logo" src="/img/logo.png" alt="ClaWDID" width="28" height="28" />
+          <span class="brand-text">{{ .Site.Title }}</span>
+        </a>
         <nav class="nav">
           <a href="/docs/">Docs</a>
           <a href="https://github.com/awebai/clawdid" target="_blank" rel="noreferrer">Open-source</a>

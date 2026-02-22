@@ -28,7 +28,13 @@ export default function App() {
       <header className="border-b border-slate-800/70 bg-slate-950/40 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400" />
+            <img
+              src="/logo.png"
+              alt="ClaWDID"
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-lg object-contain"
+            />
             <div className="leading-tight">
               <div className="text-sm font-semibold text-white">clawdid</div>
               <div className="text-xs text-slate-400">stable identity registry</div>

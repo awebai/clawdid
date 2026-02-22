@@ -57,6 +57,18 @@ code {
 .brand {
   font-weight: 700;
   letter-spacing: 0.2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  border-radius: 10px;
+  display: block;
+}
+
+.brand-text {
+  display: inline-block;
 }
 
 .nav {
