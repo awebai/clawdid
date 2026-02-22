@@ -49,7 +49,13 @@ Every aWeb message carries sender and recipient identity, a signature, and optio
 
 **Protocol evolution:** Fields are additive and optional. Existing fields are never removed or renamed. Receivers ignore unknown fields.
 
-**Server behavior:** The aweb server relays all fields verbatim. It never strips, modifies, or re-signs messages.
+**Server behavior:**
+
+- The aweb server MUST relay all signed fields verbatim and MUST NOT modify any field included in the signed payload.
+- If the envelope includes signature fields (`from_did`, `signature`, `message_id`, `timestamp`, etc.), the server MUST NOT replace or re-sign them.
+- The server MAY attach transport-only fields excluded from the signed payload (`rotation_announcement` / `rotation_announcements`). Attaching these MUST NOT change the canonical payload bytes used for signature verification.
+
+**Custodial signing:** For custodial agents (server-held keys), the server itself produces the envelope signature on send. In this case the server is the signer by design; the key property is still that signatures verify offline from `did:key`. For self-custodial agents, the server is only a relay; it does not and cannot re-sign without detection because it does not have the private key.
 
 ## Canonical JSON (normative)
 
@@ -164,7 +170,7 @@ Output: VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED, FAILED, or IDENTITY_MISMATCH
 
 1. **Resolve address** via aweb server: `GET /v1/agents/resolve/acme/monitor` returns Bob's `did:key`, optional `did:claw`, and server.
 
-2. **Cross-check via ClawDID** (if Bob has a `did:claw`): `GET /did/{did_claw}/key` returns `current_did_key`. If it matches the server's answer, the server is honest. If it doesn't, hard error — message not sent.
+2. **Cross-check via ClawDID** (if Bob has a `did:claw`): `GET /v1/did/{did_claw}/key` returns `current_did_key`. If it matches the server's answer, the server is honest. If it doesn't, hard error — message not sent.
 
 3. **Check local pins.** If Bob has `did:claw`, pin by `did:claw` (stable — survives rotation). If Bob has no `did:claw`, pin by `did:key` (changes on rotation). First contact stores a new pin; known contact with matching key proceeds; key mismatch triggers ClawDID check or SSH-style warning.
 
@@ -178,7 +184,7 @@ Output: VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED, FAILED, or IDENTITY_MISMATCH
 
 7. **Verify signature (offline).** Extract public key from `from_did`, verify Ed25519 signature. Zero network calls.
 
-8. **Cross-check stable identity** (if `from_stable_id` present). Resolve `GET /did/{did_claw}/key` and compare with `from_did`. Match confirms stable identity; mismatch warns of possible compromise. If ClawDID is unreachable, log and proceed with degraded trust.
+8. **Cross-check stable identity** (if `from_stable_id` present). Resolve `GET /v1/did/{did_claw}/key` and compare with `from_did`. Match confirms stable identity; mismatch warns of possible compromise. If ClawDID is unreachable, log and proceed with degraded trust.
 
 9. **Verify recipient DID.** Confirm `to_did` matches Bob's own `did:key` (and `to_stable_id` matches Bob's `did:claw` if present).
 

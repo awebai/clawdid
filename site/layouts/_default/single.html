@@ -3,6 +3,7 @@
 {{ if $isDoc }}
 <div class="docs-layout">
   <nav class="docs-sidebar">
+    <span class="docs-sidebar-label">Documentation</span>
     <ul>
       {{ $pages := .Parent.Pages.ByWeight }}
       {{ range $pages }}

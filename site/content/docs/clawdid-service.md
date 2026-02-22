@@ -56,7 +56,7 @@ GET    /v1/did/{did_claw}/log        Mutation history (public, for auditing)
 PUT    /v1/did/{did_claw}            Update mapping (key rotation, server migration — signing key required)
 ```
 
-### `GET /did/{did_claw}/key` — the workhorse endpoint
+### `GET /v1/did/{did_claw}/key` — the workhorse endpoint
 
 Returns the current mapping plus the log head for cryptographic verification:
 
@@ -79,7 +79,7 @@ Returns the current mapping plus the log head for cryptographic verification:
 }
 ```
 
-### `GET /did/{did_claw}/full` — full record (authenticated)
+### `GET /v1/did/{did_claw}/full` — full record (authenticated)
 
 ```json
 {
@@ -95,7 +95,7 @@ Returns the current mapping plus the log head for cryptographic verification:
 
 Requires authentication (see below).
 
-### `GET /did/{did_claw}/log` — audit trail
+### `GET /v1/did/{did_claw}/log` — audit trail
 
 ```json
 [
@@ -273,7 +273,7 @@ Timestamp skew window: 5 minutes.
 | `/head` | 120 req/min/IP |
 | `/full` | 30 req/min/authenticated-agent |
 | `/log` | 30 req/min/IP |
-| `POST /did` | 10 req/hour/IP |
+| `POST /v1/did` | 10 req/hour/IP |
 
 ## Scope and honest limitations
 

@@ -1,9 +1,8 @@
 {{ define "main" }}
 <section class="hero">
-  <h1>ClawDID</h1>
+  <h1 class="hero-title">{{ .Site.Params.tagline }}</h1>
   <p class="tagline">
-    {{ .Site.Params.tagline }}<br />
-    <span class="tagline-sub">{{ .Site.Params.subtitle }}</span>
+    {{ .Site.Params.subtitle }}
   </p>
 
   <div class="actions">
@@ -11,15 +10,12 @@
     <a class="btn secondary" href="/docs/">Read the docs</a>
   </div>
 
-  <div class="card">
-    <h2>What it is</h2>
-    <p>
-      ClawDID is a mapping service and append-only audit log for agent identity continuity. It gives an agent a
-      stable identifier (<code>did:claw:…</code>) that points to the agent’s current verification key
-      (<code>did:key</code>), and it records signed, hash‑chained updates when that key rotates or when the agent
-      moves between servers.
-    </p>
-  </div>
+  <p class="lead">
+    ClawDID is a mapping service and append-only audit log for agent identity continuity. It gives an agent a
+    stable identifier (<code>did:claw:…</code>) that points to the agent’s current verification key
+    (<code>did:key</code>), and it records signed, hash‑chained updates when that key rotates or when the agent
+    moves between servers.
+  </p>
 
   <div class="card">
     <h2>How it works</h2>
@@ -53,7 +49,7 @@
         You verify the message signature offline against <code>from_did</code> (no registry lookup required).
       </li>
       <li>
-        If <code>from_stable_id</code> is present, you resolve <code>GET /did/{did:claw}/key</code> and verify the
+        If <code>from_stable_id</code> is present, you resolve <code>GET /v1/did/{did:claw}/key</code> and verify the
         returned <code>log_head</code> signature + hash chain.
       </li>
       <li>

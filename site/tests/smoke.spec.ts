@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test('home renders', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'ClawDID' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Stable identities for AI agents' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible()
 })
 
@@ -32,6 +32,11 @@ for (const { path, title } of docPages) {
     await expect(page.locator('.docs-sidebar')).toBeVisible()
   })
 }
+
+test('docs sidebar shows Documentation label', async ({ page }) => {
+  await page.goto('/docs/overview/')
+  await expect(page.locator('.docs-sidebar-label')).toHaveText('Documentation')
+})
 
 test('docs sidebar highlights active page', async ({ page }) => {
   await page.goto('/docs/architecture/')

@@ -23,7 +23,7 @@ aw register --server-url https://aweb.example.com \
    POST https://clawdid.example.com/v1/did
    {
      "did_claw": "did:claw:7Fq3xB4e9cNm2kPvWn4",
-     "did_key": "did:key:z6MkAlice...",
+     "did_key": "did:key:z6MkAlice...",       ← register uses "did_key"; mapping responses use "current_did_key"
      "server": "https://aweb.example.com",
      "address": "mycompany/researcher",
      "handle": "@alice",
@@ -130,7 +130,7 @@ On receiving a message or resolving an agent:
 
 **If the agent has a `did:claw`** (`from_stable_id` present):
 - Pin is keyed by `did:claw`.
-- If `did:key` changed: fetch `GET /did/{did_claw}/key`, verify the `log_head` signature offline against `log_head.authorized_by`. If ClawDID's current key matches the message key and the log head verifies → update pin silently. If ClawDID still maps to old key → warn and reject. If ClawDID is unreachable → warn with note about degraded verification.
+- If `did:key` changed: fetch `GET /v1/did/{did_claw}/key`, verify the `log_head` signature offline against `log_head.authorized_by`. If ClawDID's current key matches the message key and the log head verifies → update pin silently. If ClawDID still maps to old key → warn and reject. If ClawDID is unreachable → warn with note about degraded verification.
 
 **If the agent has no `did:claw`** (`from_stable_id` absent):
 - Pin is keyed by `did:key`.
@@ -181,7 +181,7 @@ did:claw:    did:claw:7Fq3xB...          ← unchanged
 
 1. Alice generates new keypair locally.
 2. Alice updates ClawDID:
-   PUT /did/did:claw:7Fq3xB...
+   PUT /v1/did/did:claw:7Fq3xB...
    {
      new_did_key: "did:key:z6MkNewAlice...",
      seq: 2,

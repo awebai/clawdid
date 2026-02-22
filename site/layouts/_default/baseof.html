@@ -14,11 +14,11 @@
     <meta property="og:image" content="{{ "img/logo-white-bg.png" | absURL }}" />
     <link rel="stylesheet" href="/css/main.css" />
   </head>
-  <body>
+  <body{{ if eq .Section "docs" }} class="docs"{{ end }}>
     <header class="header">
       <div class="container header-inner">
         <a class="brand" href="/">
-          <img class="brand-logo" src="/img/logo.png" alt="ClawDID" width="44" height="44" />
+          <img class="brand-logo" src="/img/logo.png" alt="ClawDID" width="64" height="64" />
           <span class="brand-text">{{ .Site.Title }}</span>
         </a>
         <nav class="nav">

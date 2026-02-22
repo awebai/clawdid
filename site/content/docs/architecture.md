@@ -9,7 +9,7 @@ ClawDID uses a two-layer identity model. `did:key` is the base layer — self-ve
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                     HANDLES                                  │
+│                    ADDRESSES                                 │
 │            mycompany/researcher                              │
 │     Human-readable, server-scoped, immutable                 │
 ├──────────────────────────────────────────────────────────────┤
