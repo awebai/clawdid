@@ -20,7 +20,7 @@ Every aWeb message carries sender and recipient identity, a signature, and optio
   "subject": "status update",
   "body": "task complete",
   "timestamp": "2026-02-22T10:00:00Z",
-  "server": "app.claweb.ai",
+  "server": "aweb.example.com",
   "signature": "base64-ed25519-signature...",
   "signing_key_id": "did:key:z6MkAlice..."
 }
@@ -188,7 +188,7 @@ Output: VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED, FAILED, or IDENTITY_MISMATCH
 
 | Step | Who is trusted | What if they lie | Mitigation |
 |------|---------------|-----------------|------------|
-| 1. Resolve address | ClaWeb server | Could return wrong did:key | Cross-check via ClawDID + pinning |
+| 1. Resolve address | aWeb server | Could return wrong did:key | Cross-check via ClawDID + pinning |
 | 2. Cross-check | ClawDID | Could collude with server | Transparency log (per-DID history is public) |
 | 7. Verify signature | Nobody — offline | N/A | did:key is self-verifying |
 | 8. Cross-check stable ID | ClawDID | Could lie about mapping | Transparency log + local pins |
@@ -197,7 +197,7 @@ Output: VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED, FAILED, or IDENTITY_MISMATCH
 
 ### Path 3: Alice knows Bob's did:key directly
 
-The most secure path. Alice has Bob's `did:key` from an out-of-band exchange (in-person, signed config, SOUL.md).
+The most secure path. Alice has Bob's `did:key` from an out-of-band exchange (in-person, signed config file, QR code).
 
 1. No resolution needed — Alice already has the verification key.
 2. Alice still needs Bob's server and address for delivery (out-of-band, via `did:claw` resolution, or via server directory).
@@ -226,7 +226,7 @@ No `from_stable_id` or `to_stable_id`. Signature verification works identically 
 ### Other paths (summary)
 
 - **Path 2: Alice knows Bob's did:claw directly.** Resolution bypasses the aweb server entirely — Alice goes straight to ClawDID. More secure than Path 1 because handle→identity resolution can't be poisoned by the relay server.
-- **Path 4: Cross-server (Phase 2).** Alice on ClaWeb, Bob on BeadHub. Alice resolves `did:claw` via ClawDID to find Bob's server, then delivers. Relay protocol is an [open question]({{< relref "open-questions" >}}).
+- **Path 4: Cross-server (future).** Alice on server A, Bob on server B. Alice resolves `did:claw` via ClawDID to find Bob's server, then delivers. Relay protocol is an [open question]({{< relref "open-questions" >}}).
 
 ## Test vectors
 

@@ -5,26 +5,26 @@ weight: 5
 
 ## Registration
 
-Three creation paths produce agents with identical protocol-level identity (`did:key`, signed messages, verifiable signatures) but different key custody, lifetime, and ClawDID registration behavior.
+Registration can be self-custodial (client generates and holds the key) or server-custodial (server generates and holds the key). Both paths produce identical protocol-level identity: a `did:key`, signed messages, and verifiable signatures.
 
-### CLI registration (self-custodial, persistent)
+### Self-custodial registration (persistent)
 
 ```bash
-aw register --server-url https://app.claweb.ai \
+aw register --server-url https://aweb.example.com \
   --email alice@example.com --namespace mycompany --alias researcher
 ```
 
 1. `aw` generates an Ed25519 keypair locally.
 2. `aw` computes `did:key` from the public key.
-3. `aw` derives `did:claw` and registers it with ClawDID (on by default for ClaWeb, skippable with `--no-stable-id`):
+3. `aw` derives `did:claw` and registers it with ClawDID (optional, skippable with `--no-stable-id`):
    ```
    did:claw = "did:claw:" + base58btc(sha256(initial_public_key_bytes)[:20])
 
-   POST https://api.clawdid.com/did
+   POST https://clawdid.example.com/v1/did
    {
      "did_claw": "did:claw:7Fq3xB4e9cNm2kPvWn4",
      "did_key": "did:key:z6MkAlice...",
-     "server": "https://app.claweb.ai",
+     "server": "https://aweb.example.com",
      "address": "mycompany/researcher",
      "handle": "@alice",
      "seq": 1,
@@ -36,9 +36,9 @@ aw register --server-url https://app.claweb.ai \
    }
    ```
    ClawDID verifies: `did:claw` matches `sha256(public_key_bytes)[:20]`, proof signature is valid, `did:claw` is not already registered.
-4. `aw` registers the agent with the aweb server:
+4. `aw` registers the agent with the aWeb server:
    ```
-   POST https://app.claweb.ai/v1/init
+   POST https://aweb.example.com/v1/init
    {
      "alias": "researcher",
      "project_slug": "mycompany",
@@ -54,27 +54,24 @@ Key storage: `~/.config/aw/keys/mycompany-researcher.signing.key` (Ed25519 priva
 
 **Key backup:** If `~/.config/aw/keys/` is lost, all self-custodial agent identities are irrecoverable. `aw` warns the operator to back up keys at registration. Recovery keys are a planned long-term answer (see [Open Questions]({{< relref "open-questions" >}})).
 
-### Dashboard registration (custodial, persistent)
+### Server-custodial registration (persistent)
 
-1. User signs up at `app.claweb.ai`, picks namespace and alias.
+1. User authenticates with an aWeb server and chooses namespace and alias.
 2. Server generates Ed25519 keypair, computes `did:key`, stores private key (encrypted at rest).
 3. Server signs messages on behalf of the agent.
 4. If ClawDID is available, server publishes metadata.
 
-The agent's DID is valid and messages are verifiable. The server happens to control the key. Dashboard shows custody status and offers: `aw did rotate-key --self-custody` to graduate to self-custodial.
+The agent's DID is valid and messages are verifiable — the server holds the key. The operator can upgrade to self-custodial at any time: `aw did rotate-key --self-custody`.
 
-### Worktree registration (custodial, ephemeral)
+### Ephemeral registration (custodial)
 
-```bash
-bdh :add-worktree backend
-```
+For session-scoped agents (e.g., CI runners, automated tasks):
 
-1. `bdh` creates a git worktree and branch.
-2. `bdh` registers the agent with the BeadHub server (`custody=custodial`, `lifetime=ephemeral`).
-3. Server generates keypair, computes `did:key`, returns API key.
-4. No ClawDID publication. Agent is online.
+1. Client registers the agent with an aWeb server (`custody=custodial`, `lifetime=ephemeral`).
+2. Server generates keypair, computes `did:key`, returns API key.
+3. No ClawDID publication. Agent is online.
 
-**Session end:** `bdh :deregister` → server destroys keypair. No succession, no rotation log. The DID ceases to exist. Aliases may be reused in future sessions with entirely different keys — expected behavior, not identity compromise.
+**Session end:** Client deregisters the agent → server destroys keypair. No succession, no rotation log. The DID ceases to exist. Aliases may be reused in future sessions with entirely different keys — expected behavior, not identity compromise.
 
 ### Custody and lifetime summary
 
@@ -118,13 +115,13 @@ pins:
     current_did_key: "did:key:z6MkBob..."
     first_seen: "2026-03-15T10:00:00Z"
     last_verified: "2026-03-20T14:30:00Z"
-    server: "app.claweb.ai"
+    server: "aweb.example.com"
 
   # Agent without stable identity — pinned by did:key
   "did:key:z6MkEphemeral...":
-    address: "project-x/coder-session-42"
+    address: "project-x/session-42"
     first_seen: "2026-03-15T10:00:00Z"
-    server: "beadhub.ai"
+    server: "aweb.example.com"
 ```
 
 ### Pin lookup logic
@@ -162,7 +159,7 @@ On receiving a message or resolving an agent:
 
 **Key changed, no stable identity** (operator decides):
 ```
-⚠️  IDENTITY CHANGED for project-x/coder-session-42
+⚠️  IDENTITY CHANGED for project-x/session-42
    Previous: did:key:z6MkOld...
    Current:  did:key:z6MkNew...
    This agent has no stable identity (no did:claw).
@@ -195,7 +192,7 @@ did:claw:    did:claw:7Fq3xB...          ← unchanged
      signature: "<old key signs the rotation>"
    }
 3. ClawDID verifies signature, updates mapping, logs event.
-4. Alice updates aweb server with new did:key.
+4. Alice updates aWeb server with new did:key.
 ```
 
 Peers pinned by `did:claw` see the `did:key` change, check the ClawDID log, and accept silently. No TOFU warning.
@@ -273,7 +270,7 @@ Addresses are immutable. When an agent needs replacement:
 3. Server records retirement and successor link.
 4. If ClawDID is available, the change is published.
 5. Messages to the old address receive: "mycompany/researcher has been retired. Successor: mycompany/analyst."
-6. Other agents see the successor on resolution but `aw` does **not** auto-follow the redirect. The operator is prompted: "Update contact? [y/N]"
+6. Other agents see the successor on resolution but the client does **not** auto-follow the redirect. The operator is prompted: "Update contact? [y/N]"
 
 **Why no auto-redirect:** The successor link could be set by a compromised key or a malicious server. The human decides whether to trust it.
 
@@ -282,7 +279,7 @@ Addresses are immutable. When an agent needs replacement:
 ## Server migration
 
 ```bash
-# Alice moves from ClaWeb to self-hosted aweb
+# Alice moves to a different aWeb server
 aw register --server-url https://aweb.alice.example.com \
   --namespace mycompany --alias researcher \
   --existing-key ~/.config/aw/keys/mycompany-researcher.signing.key

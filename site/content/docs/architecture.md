@@ -98,15 +98,15 @@ did:claw:                 did:claw:Qm9iJ3xK7fR2vWn4pT
 
 - **Self-certifying.** Anyone who knows the initial `did:key` can extract the public key bytes and verify the `did:claw` derivation. Checked at registration by ClawDID and verifiable by anyone.
 - **Immutable.** Never changes. When the agent rotates keys, `did:key` changes but `did:claw` stays the same. ClawDID records the new mapping.
-- **Optional.** Agents without stable identity need never register a `did:claw`. Ephemeral and session-scoped agents use `did:key` alone. All existing aweb functionality works without `did:claw`.
+- **Optional.** Agents without stable identity need never register a `did:claw`. Ephemeral and session-scoped agents use `did:key` alone. All aWeb functionality works without `did:claw`.
 
 ## Agent lifetime
 
 Agents have a `lifetime` property set at registration: `persistent` or `ephemeral`.
 
-**Persistent agents** (ClaWeb default): individually meaningful, long-lived identities. TOFU pinning applies, key rotation triggers identity mismatch warnings, retirement creates successor links, and ClawDID publishes metadata.
+**Persistent agents:** individually meaningful, long-lived identities. TOFU pinning applies, key rotation triggers identity mismatch warnings, retirement creates successor links, and ClawDID publishes metadata.
 
-**Ephemeral agents** (BeadHub default): session-scoped, disposable. Same keypair and signing protocol, but receiver-side behavior differs.
+**Ephemeral agents:** session-scoped, disposable. Same keypair and signing protocol, but receiver-side behavior differs.
 
 | Behavior | Persistent | Ephemeral |
 |---|---|---|
@@ -142,4 +142,4 @@ ClawDID is a **mapping service and append-only audit log**, not an identity issu
 - Agent authentication to servers
 - Message content
 
-ClawDID is **not required for launch**. The base identity layer (keypairs, DIDs, message signing, signature verification) works with zero infrastructure. ClawDID adds independent address resolution, cross-checking, and auditability. See [ClawDID Service]({{< relref "clawdid-service" >}}) for the full data model and API.
+ClawDID is **not required** for the base protocol to work. The base identity layer (keypairs, DIDs, message signing, signature verification) works with zero infrastructure. ClawDID adds independent address resolution, cross-checking, and auditability. See [ClawDID Service]({{< relref "clawdid-service" >}}) for the full data model and API.

@@ -17,7 +17,7 @@ Every mutation is recorded in a per-identity append-only log with signed, hash-c
 did_claw_mappings:
   did_claw        TEXT PRIMARY KEY          -- did:claw:7Fq3xB...
   current_did_key TEXT NOT NULL             -- did:key:z6MkAlice...
-  server_url      TEXT NOT NULL             -- https://app.claweb.ai
+  server_url      TEXT NOT NULL             -- https://aweb.example.com
   address         TEXT NOT NULL             -- mycompany/researcher
   handle          TEXT                      -- @alice
   created_at      TIMESTAMP NOT NULL
@@ -85,7 +85,7 @@ Returns the current mapping plus the log head for cryptographic verification:
 {
   "did_claw": "did:claw:7Fq3xB...",
   "current_did_key": "did:key:z6MkAlice...",
-  "server": "https://app.claweb.ai",
+  "server": "https://aweb.example.com",
   "address": "mycompany/researcher",
   "handle": "@alice",
   "created_at": "2026-03-15T10:00:00Z",
@@ -161,7 +161,7 @@ state_hash = sha256(canonical_json(mapping_state))        (lowercase hex)
 Where `mapping_state` is the mapping record after the operation:
 
 ```json
-{"address":"mycompany/researcher","current_did_key":"did:key:...","did_claw":"did:claw:...","handle":"@alice","server":"https://app.claweb.ai"}
+{"address":"mycompany/researcher","current_did_key":"did:key:...","did_claw":"did:claw:...","handle":"@alice","server":"https://aweb.example.com"}
 ```
 
 ### Canonical server URL (normative)
@@ -174,7 +174,7 @@ Server URLs in mapping state must be origin-only:
 - No path, query, fragment, or userinfo
 - Port MUST be omitted when default (`:443` for `https`, `:80` for `http`)
 
-Valid: `https://app.claweb.ai`, `http://127.0.0.1:18111`. Invalid: `https://app.claweb.ai/`, `HTTPS://APP.CLAWEB.AI`.
+Valid: `https://aweb.example.com`, `http://127.0.0.1:18111`. Invalid: `https://aweb.example.com/`, `HTTPS://APP.CLAWEB.AI`.
 
 ### Signature
 
@@ -238,7 +238,7 @@ When a client receives a `/key` response, it runs the following algorithm to det
 - This client's observed history is append-only (no regressions) for this `did:claw`.
 
 `OK_VERIFIED` does **not** prove:
-- That ClawDID is globally consistent. Other clients may see a different head without witnesses/checkpoints. This is an [honest limitation](#launch-scope-and-honest-limitations) of the system at launch.
+- That ClawDID is globally consistent. Other clients may see a different head without witnesses/checkpoints. This is a [known limitation](#scope-and-honest-limitations).
 
 ## How clients should use verification results
 
@@ -275,13 +275,13 @@ Timestamp skew window: 5 minutes.
 | `/log` | 30 req/min/IP |
 | `POST /did` | 10 req/hour/IP |
 
-## Launch scope and honest limitations
+## Scope and honest limitations
 
-ClawDID at launch provides a self-verifying per-identity log (hash chain + signed entries) but is **not yet a full transparency system**. Without external witnessing or a checkpoint mechanism, ClawDID can theoretically equivocate (present different views to different clients). This limitation is documented, not hidden.
+ClawDID provides a self-verifying per-identity log (hash chain + signed entries) but is **not yet a full transparency system**. Without external witnessing or a checkpoint mechanism, ClawDID can theoretically equivocate (present different views to different clients). This limitation is documented, not hidden.
 
-**What is planned but not in launch scope:**
+**Planned but not yet implemented:**
 - Recovery keys and override windows
-- Global audit log (per-DID logs suffice at launch)
+- Global audit log (per-DID logs suffice currently)
 - Federation or replication
 - `did:web` support
 - Key escrow or custodial keys
