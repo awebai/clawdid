@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from clawdid.config import settings
 from clawdid.db import DatabaseInfra, get_db_infra
 from clawdid.did import (did_claw_from_public_key, public_key_from_did_key,
-                         validate_stable_id)
+                         stable_method_from_id, validate_stable_id)
 from clawdid.models import (DidFullResponse, DidKeyResponse, DidLogEntry,
                             DidRegisterRequest, DidUpdateRequest)
 from clawdid.signing import canonical_json_bytes, verify_did_key_signature
@@ -42,6 +42,33 @@ def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _log_entry_payload(
+    *,
+    did_claw: str,
+    seq: int,
+    operation: str,
+    previous_did_key: str | None,
+    new_did_key: str,
+    prev_entry_hash: str | None,
+    state_hash: str,
+    authorized_by: str,
+    timestamp: str,
+) -> bytes:
+    return canonical_json_bytes(
+        {
+            "authorized_by": authorized_by,
+            "did_claw": did_claw,
+            "new_did_key": new_did_key,
+            "operation": operation,
+            "prev_entry_hash": prev_entry_hash,
+            "previous_did_key": previous_did_key,
+            "seq": seq,
+            "state_hash": state_hash,
+            "timestamp": timestamp,
+        }
+    )
+
+
 def _state_hash(
     *,
     did_claw: str,
@@ -70,32 +97,17 @@ async def register_did(
     try:
         validate_stable_id(req.did_claw)
         _enforce_timestamp_skew(req.timestamp)
-        derived = did_claw_from_public_key(
-            public_key_from_did_key(req.did_key),
-            method=settings.clawdid_method,
-        )
+        if req.seq != 1 or req.prev_entry_hash is not None:
+            raise ValueError("seq must be 1 and prev_entry_hash must be null on create")
+        if req.authorized_by != req.did_key:
+            raise ValueError("authorized_by must equal did_key on create")
+        method = stable_method_from_id(req.did_claw)
+        public_key = public_key_from_did_key(req.did_key)
+        derived = did_claw_from_public_key(public_key, method=method)
         if derived != req.did_claw:
             raise ValueError("did_claw does not match did_key derivation")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-
-    proof_payload = canonical_json_bytes(
-        {
-            "action": "register",
-            "address": req.address,
-            "did_claw": req.did_claw,
-            "did_key": req.did_key,
-            "handle": req.handle,
-            "server": req.server,
-            "timestamp": req.timestamp,
-        }
-    )
-    try:
-        verify_did_key_signature(
-            did_key=req.did_key, payload=proof_payload, signature_b64=req.proof
-        )
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="invalid proof") from e
 
     db = db_infra.manager()
     created_at = _now()
@@ -116,6 +128,26 @@ async def register_did(
             address=req.address,
             handle=req.handle,
         )
+        if state_hash != req.state_hash:
+            raise HTTPException(status_code=400, detail="state_hash mismatch")
+
+        entry_payload = _log_entry_payload(
+            did_claw=req.did_claw,
+            seq=1,
+            operation="create",
+            previous_did_key=None,
+            new_did_key=req.did_key,
+            prev_entry_hash=None,
+            state_hash=state_hash,
+            authorized_by=req.did_key,
+            timestamp=req.timestamp,
+        )
+        try:
+            verify_did_key_signature(
+                did_key=req.did_key, payload=entry_payload, signature_b64=req.proof
+            )
+        except Exception as e:
+            raise HTTPException(status_code=401, detail="invalid proof") from e
 
         await tx.execute(
             """
@@ -132,22 +164,6 @@ async def register_did(
             updated_at,
         )
 
-        prev_entry_hash = None
-        entry_payload = canonical_json_bytes(
-            {
-                "address": req.address,
-                "authorized_by": req.did_key,
-                "did_claw": req.did_claw,
-                "new_did_key": req.did_key,
-                "operation": "create",
-                "prev_entry_hash": prev_entry_hash,
-                "previous_did_key": None,
-                "seq": 1,
-                "server": req.server,
-                "state_hash": state_hash,
-                "timestamp": req.timestamp,
-            }
-        )
         entry_hash = _sha256_hex(entry_payload)
 
         await tx.execute(
@@ -163,7 +179,7 @@ async def register_did(
             "create",
             None,
             req.did_key,
-            prev_entry_hash,
+            None,
             entry_hash,
             state_hash,
             req.did_key,
@@ -180,6 +196,10 @@ async def get_key(
     did_claw: str,
     db_infra: DatabaseInfra = Depends(get_db_infra),
 ) -> DidKeyResponse:
+    try:
+        validate_stable_id(did_claw)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     db = db_infra.manager()
     row = await db.fetch_one(
         """
@@ -213,6 +233,10 @@ async def get_full(
     authorization: str | None = Header(default=None),
     x_clawdid_timestamp: str | None = Header(default=None, alias="X-Clawdid-Timestamp"),
 ) -> DidFullResponse:
+    try:
+        validate_stable_id(did_claw)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     try:
         did_key, sig = _parse_didkey_auth(authorization)
         if not x_clawdid_timestamp:
@@ -256,6 +280,10 @@ async def get_log(
     did_claw: str,
     db_infra: DatabaseInfra = Depends(get_db_infra),
 ) -> list[DidLogEntry]:
+    try:
+        validate_stable_id(did_claw)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     db = db_infra.manager()
     rows = await db.fetch_all(
         """
@@ -319,27 +347,6 @@ async def update_mapping(
                 status_code=401, detail="authorized_by must be current did:key"
             )
 
-        update_payload = canonical_json_bytes(
-            {
-                "action": "update",
-                "address": req.address or row["address"],
-                "did_claw": did_claw,
-                "new_did_key": req.new_did_key,
-                "operation": req.operation,
-                "previous_did_key": previous_did_key,
-                "server": req.server or row["server_url"],
-                "timestamp": req.timestamp,
-            }
-        )
-        try:
-            verify_did_key_signature(
-                did_key=req.authorized_by,
-                payload=update_payload,
-                signature_b64=req.signature,
-            )
-        except Exception as e:
-            raise HTTPException(status_code=401, detail="invalid signature") from e
-
         # Append log entry
         last = await tx.fetch_one(
             """
@@ -351,8 +358,14 @@ async def update_mapping(
             """,
             did_claw,
         )
-        next_seq = (last["seq"] if last else 0) + 1
-        prev_entry_hash = last["entry_hash"] if last else None
+        if last is None:
+            raise HTTPException(status_code=500, detail="missing audit log head")
+        next_seq = last["seq"] + 1
+        prev_entry_hash = last["entry_hash"]
+        if req.seq != next_seq:
+            raise HTTPException(status_code=409, detail="seq mismatch")
+        if req.prev_entry_hash != prev_entry_hash:
+            raise HTTPException(status_code=409, detail="prev_entry_hash mismatch")
 
         server_url = req.server or row["server_url"]
         address = req.address or row["address"]
@@ -365,23 +378,29 @@ async def update_mapping(
             address=address,
             handle=handle,
         )
+        if state_hash != req.state_hash:
+            raise HTTPException(status_code=400, detail="state_hash mismatch")
 
-        entry_payload = canonical_json_bytes(
-            {
-                "address": address,
-                "authorized_by": req.authorized_by,
-                "did_claw": did_claw,
-                "new_did_key": req.new_did_key,
-                "operation": req.operation,
-                "prev_entry_hash": prev_entry_hash,
-                "previous_did_key": previous_did_key,
-                "seq": next_seq,
-                "server": server_url,
-                "state_hash": state_hash,
-                "timestamp": req.timestamp,
-            }
+        entry_payload = _log_entry_payload(
+            did_claw=did_claw,
+            seq=next_seq,
+            operation=req.operation,
+            previous_did_key=previous_did_key,
+            new_did_key=req.new_did_key,
+            prev_entry_hash=prev_entry_hash,
+            state_hash=state_hash,
+            authorized_by=req.authorized_by,
+            timestamp=req.timestamp,
         )
         entry_hash = _sha256_hex(entry_payload)
+        try:
+            verify_did_key_signature(
+                did_key=req.authorized_by,
+                payload=entry_payload,
+                signature_b64=req.signature,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=401, detail="invalid signature") from e
 
         await tx.execute(
             """

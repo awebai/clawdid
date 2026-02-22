@@ -12,6 +12,11 @@ class DidRegisterRequest(BaseModel):
     server: str = Field(..., max_length=512)
     address: str = Field(..., max_length=256)
     handle: Optional[str] = Field(default=None, max_length=256)
+    # Log entry binding: make the audit trail self-verifying.
+    seq: int = Field(default=1, ge=1)
+    prev_entry_hash: Optional[str] = Field(default=None, max_length=128)
+    state_hash: str = Field(..., max_length=128)
+    authorized_by: str = Field(..., max_length=256)
     timestamp: str = Field(..., max_length=64)
     proof: str = Field(..., max_length=2048)
 
@@ -37,6 +42,9 @@ class DidUpdateRequest(BaseModel):
     server: Optional[str] = Field(default=None, max_length=512)
     address: Optional[str] = Field(default=None, max_length=256)
     handle: Optional[str] = Field(default=None, max_length=256)
+    seq: int = Field(..., ge=1)
+    prev_entry_hash: str = Field(..., max_length=128)
+    state_hash: str = Field(..., max_length=128)
     authorized_by: str = Field(..., max_length=256)
     timestamp: str = Field(..., max_length=64)
     signature: str = Field(..., max_length=2048)

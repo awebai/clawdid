@@ -23,9 +23,6 @@ class Settings(BaseSettings):
     database_pool_size: int = 10
     database_pool_overflow: int = 10
 
-    clawdid_method: str = Field(
-        default="claw", description="Stable DID method name: claw|aw"
-    )
     auth_timestamp_skew_seconds: int = 300
 
 

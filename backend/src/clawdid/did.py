@@ -35,6 +35,14 @@ def did_claw_from_public_key(public_key: bytes, *, method: str = "claw") -> str:
     raise ValueError("method must be 'claw' or 'aw'")
 
 
+def stable_method_from_id(stable_id: str) -> str:
+    if stable_id.startswith(_DID_CLAW_PREFIX):
+        return "claw"
+    if stable_id.startswith(_DID_AW_PREFIX):
+        return "aw"
+    raise ValueError("stable_id must start with did:claw: or did:aw:")
+
+
 def validate_stable_id(stable_id: str) -> None:
     if stable_id.startswith(_DID_CLAW_PREFIX) or stable_id.startswith(_DID_AW_PREFIX):
         return

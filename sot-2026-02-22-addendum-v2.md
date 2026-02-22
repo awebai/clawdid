@@ -102,6 +102,41 @@ did_claw_log:
   PRIMARY KEY (did_claw, seq)
 ```
 
+### Canonical log entries (normative)
+
+The audit trail must be **self-verifying**: given only the `GET /did/{did_claw}/log` output, any verifier can (a) recompute each `entry_hash`, (b) verify each `signature` against `authorized_by` (a `did:key`), and (c) verify the hash-chain via `prev_entry_hash`.
+
+**Mapping state hash (normative):**
+
+`state_hash` is `sha256(canonical_json(mapping_state))`, where `mapping_state` is:
+
+```json
+{"address":"mycompany/researcher","current_did_key":"did:key:...","did_claw":"did:claw:...","handle":"@alice","server":"https://app.claweb.ai"}
+```
+
+**Log entry payload (normative):**
+
+`entry_payload_bytes = canonical_json(log_entry_payload)` where:
+
+```json
+{
+  "authorized_by": "did:key:...",
+  "did_claw": "did:claw:...",
+  "new_did_key": "did:key:...",
+  "operation": "rotate_key",
+  "prev_entry_hash": "hex...",         // null for seq=1
+  "previous_did_key": "did:key:...",   // null for create
+  "seq": 2,
+  "state_hash": "hex...",
+  "timestamp": "2026-03-15T10:00:00Z"
+}
+```
+
+Rules:
+- Canonical JSON means lexicographic key sort, compact separators, literal UTF-8 (no `\uXXXX` escapes).
+- `entry_hash = sha256(entry_payload_bytes)` (hex encoded).
+- `signature` is Ed25519 over `entry_payload_bytes`, verified offline against `authorized_by` (a `did:key`).
+
 ### ClaWDID is for verification, not discovery
 
 This principle is unchanged from v1. ClaWDID has **no listing endpoint.** There is no way to enumerate all registered agents. It is a point-lookup and audit service.
@@ -585,7 +620,11 @@ did:claw:    did:claw:7Fq3xB...          ← unchanged
    PUT https://api.clawdid.com/did/did:claw:7Fq3xB...
    {
      new_did_key: "did:key:z6MkNewAlice...",
+     seq: 2,
+     prev_entry_hash: "<hash from latest /log entry>",
+     state_hash: "<sha256 of mapping state after operation>",
      authorized_by: "did:key:z6MkOldAlice...",
+     timestamp: "2026-06-01T12:00:00Z",
      signature: <old key signs the rotation>
    }
 3. ClaWDID verifies the signature, updates the mapping, logs the event.
@@ -692,7 +731,7 @@ Step 1 — Generate keypair locally
   Private key → ~/.config/aw/keys/signing.key
 
 Step 2 — Register did:claw with ClaWDID (optional, on by default for ClaWeb)
-  did:claw = "did:claw:" + base58(sha256(did_key_bytes)[:20])
+  did:claw = "did:claw:" + base58btc(sha256(initial_public_key_bytes)[:20])
 
   aw → POST https://api.clawdid.com/did
   {
@@ -701,12 +740,17 @@ Step 2 — Register did:claw with ClaWDID (optional, on by default for ClaWeb)
     "server": "https://app.claweb.ai",
     "address": "mycompany/researcher",
     "handle": "@alice",
+    "seq": 1,
+    "prev_entry_hash": null,
+    "state_hash": "<sha256 of mapping state>",
+    "authorized_by": "did:key:z6MkAlice...",
+    "timestamp": "2026-02-22T10:00:00Z",
     "proof": <did:key signs the registration payload>
   }
 
   ClaWDID verifies:
-  - did:claw matches sha256(did_key)[:20] (self-certifying derivation)
-  - Proof signature valid for the did:key
+  - did:claw matches sha256(public_key_bytes)[:20] (self-certifying derivation)
+  - Proof signature valid for the canonical log entry payload (§A2)
   - did:claw not already registered
 
   ← { "registered": true }
