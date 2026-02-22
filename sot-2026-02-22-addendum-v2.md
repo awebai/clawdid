@@ -87,15 +87,19 @@ did_claw_mappings:
   updated_at     TIMESTAMP NOT NULL
 
 did_claw_log:
-  id             SERIAL PRIMARY KEY
   did_claw       TEXT NOT NULL REFERENCES did_claw_mappings(did_claw)
+  seq            BIGINT NOT NULL           -- per-did monotonic sequence number
   operation      TEXT NOT NULL             -- 'create', 'rotate_key', 'update_server'
   previous_did_key TEXT                    -- null on create
   new_did_key    TEXT NOT NULL
+  prev_entry_hash TEXT                     -- null for seq=1
+  entry_hash     TEXT NOT NULL             -- sha256 of canonical log entry (includes prev_entry_hash)
   state_hash     TEXT NOT NULL             -- sha256 of mapping state after operation
   authorized_by  TEXT NOT NULL             -- did:key that signed this operation
   signature      TEXT NOT NULL
   created_at     TIMESTAMP NOT NULL
+
+  PRIMARY KEY (did_claw, seq)
 ```
 
 ### ClaWDID is for verification, not discovery
@@ -167,10 +171,10 @@ There is no global log endpoint. Per-DID logs provide sufficient auditability wi
 
 ## A3. did:claw construction
 
-A `did:claw` is derived from the agent's **initial** `did:key` — the one generated at first registration.
+A `did:claw` is derived from the agent's **initial** Ed25519 public key — the one embedded in the initial `did:key` at first registration.
 
 ```
-did:claw = "did:claw:" + base58(sha256(initial_did_key_bytes)[:20])
+did:claw = "did:claw:" + base58btc(sha256(initial_public_key_bytes)[:20])
 ```
 
 Note: 20 bytes (160 bits) rather than the 16 bytes proposed in v1, giving a birthday-attack bound of ~2^80 rather than ~2^64. Minimal length increase, significantly better collision resistance.
@@ -178,15 +182,15 @@ Note: 20 bytes (160 bits) rather than the 16 bytes proposed in v1, giving a birt
 Example:
 
 ```
-Agent's initial did:key: did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
-Raw public key bytes:    0x3b7a...
-SHA-256 of did:key bytes: 0x8f2c4d1a9e7b3f...
+Agent's initial did:key:  did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
+Raw public key bytes:     0x3b7a...  (32 bytes, extracted from did:key multicodec payload)
+SHA-256 of public key:    0x8f2c4d1a9e7b3f...
 First 20 bytes:          0x8f2c4d1a9e7b3f02a1b8c9d4e5f6071829
 Base58 encode:           Qm9iJ3xK7fR2vWn4pT
 did:claw:                did:claw:Qm9iJ3xK7fR2vWn4pT
 ```
 
-**Self-certifying property:** Anyone who knows the initial `did:key` can verify that the `did:claw` was derived from it. This is checked at registration time by ClaWDID and can be verified by anyone who has both values.
+**Self-certifying property:** Anyone who knows the initial `did:key` can extract the public key bytes and verify that the `did:claw` was derived from them. This is checked at registration time by ClaWDID and can be verified by anyone who has both values.
 
 **Immutability:** The `did:claw` never changes. When the agent rotates keys, the `did:key` changes but the `did:claw` remains the same. ClaWDID records the new `did:claw` → `did:key` mapping.
 
@@ -211,6 +215,7 @@ The `from_did` and `to_did` fields already exist in the aweb protocol and mean "
   "to_did": "did:key:z6MkBob...",
   "to_stable_id": "did:claw:Qm9iJ3x...",
   "type": "mail",
+  "message_id": "8b1c2c69-7c2a-4fbb-9f4a-3dfb7d7a26c0",
   "subject": "status update",
   "body": "task complete",
   "timestamp": "2026-02-22T10:00:00Z",
@@ -226,6 +231,7 @@ The `from_did` and `to_did` fields already exist in the aweb protocol and mean "
 | `to` | Recipient's address | Yes | Server: route to inbox |
 | `to_did` | Recipient's `did:key` | Yes | Recipient: confirm message was intended for them |
 | `to_stable_id` | Recipient's `did:claw` | No | Recipient: confirm stable identity match |
+| `message_id` | UUIDv4 message identifier | Yes | Recipient: dedup/replay protection |
 | `signature` | Ed25519 signature over canonical payload | Yes | Recipient: verify message authenticity |
 
 ### What is signed
@@ -236,17 +242,19 @@ Canonical payload (deterministic key ordering, no optional whitespace):
 
 When stable IDs are present:
 ```json
-{"body":"task complete","from":"mycompany/researcher","from_did":"did:key:z6MkAlice...","from_stable_id":"did:claw:7Fq3xB...","subject":"status update","timestamp":"2026-02-22T10:00:00Z","to":"acme/monitor","to_did":"did:key:z6MkBob...","to_stable_id":"did:claw:Qm9iJ3x...","type":"mail"}
+{"body":"task complete","from":"mycompany/researcher","from_did":"did:key:z6MkAlice...","from_stable_id":"did:claw:7Fq3xB...","message_id":"8b1c2c69-7c2a-4fbb-9f4a-3dfb7d7a26c0","subject":"status update","timestamp":"2026-02-22T10:00:00Z","to":"acme/monitor","to_did":"did:key:z6MkBob...","to_stable_id":"did:claw:Qm9iJ3x...","type":"mail"}
 ```
 
 When stable IDs are absent (ephemeral agent, no ClaWDID registration):
 ```json
-{"body":"task complete","from":"mycompany/researcher","from_did":"did:key:z6MkAlice...","subject":"status update","timestamp":"2026-02-22T10:00:00Z","to":"acme/monitor","to_did":"did:key:z6MkBob...","type":"mail"}
+{"body":"task complete","from":"mycompany/researcher","from_did":"did:key:z6MkAlice...","message_id":"8b1c2c69-7c2a-4fbb-9f4a-3dfb7d7a26c0","subject":"status update","timestamp":"2026-02-22T10:00:00Z","to":"acme/monitor","to_did":"did:key:z6MkBob...","type":"mail"}
 ```
 
 Absent optional fields are simply omitted from the canonical form, not included as null. This means signatures from agents without stable IDs are still valid and verifiable — the payload is just shorter.
 
-**Implementation note:** The set of signed fields expands from 8 (`body`, `from`, `from_did`, `subject`, `timestamp`, `to`, `to_did`, `type`) to up to 10 when `from_stable_id` and `to_stable_id` are present. The signing code includes all fields present in the message that are in the signed fields set — absent optional fields are simply not in the message dict and are not serialized. Two messages with identical content but different stable ID presence will produce different canonical payloads and different signatures. This is correct behavior: the signature binds to exactly the fields present.
+**Implementation note:** The set of signed fields expands from 9 (`body`, `from`, `from_did`, `message_id`, `subject`, `timestamp`, `to`, `to_did`, `type`) to up to 11 when `from_stable_id` and `to_stable_id` are present. The signing code includes all fields present in the message that are in the signed fields set — absent optional fields are simply not in the message dict and are not serialized. Two messages with identical content but different stable ID presence will produce different canonical payloads and different signatures. This is correct behavior: the signature binds to exactly the fields present.
+
+**Presence rule (important):** If an agent has a registered stable identity (did:claw), `from_stable_id` MUST be present on all messages it sends, and it MUST be included in the signed payload. This avoids ambiguity in pinning/continuity checks.
 
 ### Why `to_did` is in the signed payload
 
@@ -560,7 +568,9 @@ Alice's human must tell Bob's human out-of-band that the rotation is real.
 
 This is the current model. It works. It's correct. It's the same security model as SSH.
 
-The aweb server mitigates bare TOFU warnings via **rotation announcements** (see main SOT §5.4). When an agent rotates its key, the server attaches a signed announcement to outgoing messages — a proof that the old key authorized the transition to the new key. This lets the receiver auto-accept the rotation without an interactive prompt. Announcements are delivered per-peer until the peer responds or 24 hours elapse, whichever comes first. This mechanism applies exclusively to agents without `did:claw`; agents with `did:claw` use the ClaWDID log for rotation verification instead (see below).
+The aweb server mitigates bare TOFU warnings via **rotation announcements** (see main SOT §5.4). When an agent rotates its key, the server attaches a signed announcement to outgoing messages — a proof that the old key authorized the transition to the new key. This lets the receiver auto-accept the rotation without an interactive prompt. Announcements are delivered per-peer until the peer responds or 24 hours elapse, whichever comes first.
+
+For agents with `did:claw`, the preferred continuity check is the ClaWDID audit trail (stable ID → current key). Rotation announcements remain a useful fallback when ClaWDID is unreachable or when the receiver has not yet observed/pinned the sender’s stable ID.
 
 ### With did:claw
 
@@ -827,7 +837,13 @@ ClaWDID at launch is a small service. It does not need to be complex.
 
 **Endpoints:** Five, as described in §A2.
 
-**Authentication for `/full`:** Requesting agent includes `Authorization: DIDKey <did:key> <signature-over-timestamp>`. ClaWDID extracts the public key from the `did:key` (offline, no lookup needed — `did:key` is self-contained), verifies the signature. This confirms the requester is a real agent without ClaWDID needing any state about them.
+**Authentication for `/full`:** Requesting agent includes `Authorization: DIDKey <did:key> <signature>` and an `X-Clawdid-Timestamp` header. ClaWDID extracts the public key from the `did:key` (offline, no lookup needed — `did:key` is self-contained), verifies the signature over the canonical string:
+
+```
+<timestamp>\n<HTTP method>\n<request path>
+```
+
+ClaWDID enforces a short timestamp skew window (e.g., 5 minutes). This confirms the requester controls a real `did:key` without ClaWDID needing any state about them.
 
 **Rate limiting:**
 - `/key`: 60 req/min/IP (public, the workhorse)
@@ -839,7 +855,7 @@ ClaWDID at launch is a small service. It does not need to be complex.
 
 **What it does NOT need at launch:**
 - Recovery keys and override windows
-- Global transparency log (per-DID logs suffice)
+- Global audit log (per-DID logs suffice)
 - Federation or replication
 - `did:web` support
 - Key escrow or custodial keys
@@ -962,4 +978,3 @@ Changes from original addendum (v1):
 5. **ClaWDID governance:** Same concern as v1 — who operates it long-term. Track, don't solve pre-launch.
 
 6. **Caching and fallback behavior:** When `aw` resolves a did:claw via ClaWDID, should it cache the result? For how long? The addendum should specify a TTL-based cache so that ClaWDID outages degrade gracefully. Suggested default: cache for 1 hour, serve stale cache for up to 24 hours if ClaWDID is unreachable.
-

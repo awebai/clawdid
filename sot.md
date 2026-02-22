@@ -168,13 +168,16 @@ Lifetime is included in agent metadata and discoverable via resolution. The `aw`
 
 ### 2.5 ClaWDID
 
-ClaWDID is a metadata registry and key transparency log. It is **not** an identity issuer — identity comes from the keypair and the `did:key` encoding. ClaWDID publishes discovery metadata and maintains an auditable record of key rotations, server migrations, and agent retirement.
+ClaWDID is a mapping service and append-only audit log. It is **not** an identity issuer — identity comes from the keypair and the `did:key` encoding. ClaWDID is used to bind long-lived, human-facing identifiers (addresses) to cryptographic identity over time and to provide an independently auditable record of changes.
+
+When deployed, ClaWDID also introduces an optional **stable identity** layer (method name TBD: `did:claw` vs `did:aw`). A stable identity never changes across key rotations and maps to the agent’s **current** `did:key` (the actual verification key). Message signature verification remains offline against `did:key`; ClaWDID is additive continuity and cross-checking, not a dependency for verification.
 
 **What ClaWDID stores:**
 
 ```json
 {
-  "current_did": "did:key:z6MkhaXgBZDvotDkL...",
+  "stable_id": "did:claw:Qm9iJ3x...",          // optional stable identity
+  "current_did_key": "did:key:z6MkhaXgBZDvotDkL...",
   "address": "mycompany/researcher",
   "handle": "@alice",
   "server": "app.claweb.ai",
@@ -182,16 +185,14 @@ ClaWDID is a metadata registry and key transparency log. It is **not** an identi
   "updated": "2026-03-15T10:00:00Z",
   "custody": "self",
   "status": "active",
-  "previous_dids": [],
   "successor": null
 }
 ```
 
 **What ClaWDID provides:**
-- Address → current DID resolution (lookup by `namespace/alias`)
-- DID → metadata resolution (lookup by `did:key:...`)
-- Append-only transparency log of all mutations
-- Key rotation chain (previous DIDs linked by signed transitions)
+- Stable ID → current `did:key` mapping (lookup by `did:claw:...` / `did:aw:...`, when used)
+- Address → stable ID and/or current `did:key` (lookup by `namespace/alias`)
+- Per-identifier append-only audit log of all mutations (rotations, server changes, retirement/succession)
 
 **What ClaWDID does NOT provide:**
 - Identity creation (DIDs are derived from keys by the client or server)
@@ -204,12 +205,11 @@ ClaWDID is a metadata registry and key transparency log. It is **not** an identi
 **ClaWDID API** (when deployed):
 
 ```
-POST   /agents                  Publish agent metadata (DID, address, server)
-GET    /agents/{did}            Resolve by DID
-GET    /agents?address={addr}   Resolve by address
-PUT    /agents/{did}            Update metadata (signed by current key)
-GET    /agents/{did}/log        Per-agent audit log
-GET    /log                     Global transparency log (paginated, append-only)
+POST   /did                     Register a stable ID mapping (requires proof of key ownership)
+GET    /did/{stable_id}/key     Resolve stable ID → current did:key (public, rate-limited)
+GET    /did/{stable_id}/full    Resolve stable ID → full mapping (authenticated)
+PUT    /did/{stable_id}         Update mapping (requires current signing key proof)
+GET    /did/{stable_id}/log     Per-stable-ID audit log (public)
 ```
 
 ---
@@ -416,7 +416,7 @@ The signed payload is a canonical JSON serialization of the message fields. Cano
 Fields included in the signed payload, in canonical order:
 
 ```json
-{"body":"results attached","from":"mycompany/researcher","from_did":"did:key:z6MkhaXgBZDvotDkL...","subject":"task complete","timestamp":"2026-02-21T15:30:00Z","to":"otherco/monitor","to_did":"did:key:z6MkrT4Jxd...","type":"mail"}
+{"body":"results attached","from":"mycompany/researcher","from_did":"did:key:z6MkhaXgBZDvotDkL...","message_id":"8b1c2c69-7c2a-4fbb-9f4a-3dfb7d7a26c0","subject":"task complete","timestamp":"2026-02-21T15:30:00Z","to":"otherco/monitor","to_did":"did:key:z6MkrT4Jxd...","type":"mail"}
 ```
 
 Rules:
@@ -428,7 +428,7 @@ Rules:
 - No trailing commas
 - UTF-8 encoding, no BOM
 
-This is a subset of RFC 8785 (JSON Canonicalization Scheme). Full RFC 8785 compliance may be adopted later; this simplified form is sufficient at launch and can be tightened pre-launch without migration cost.
+Canonicalization MUST be compatible with RFC 8785 (JSON Canonicalization Scheme / JCS). Implementations MUST publish and test against conformance vectors (canonical payload bytes + expected signature) to ensure cross-language compatibility.
 
 #### Signature computation (normative)
 
@@ -448,6 +448,7 @@ This is a subset of RFC 8785 (JSON Canonicalization Scheme). Full RFC 8785 compl
   "to": "otherco/monitor",
   "to_did": "did:key:z6MkrT4Jxd...",
   "type": "mail",
+  "message_id": "8b1c2c69-7c2a-4fbb-9f4a-3dfb7d7a26c0",
   "subject": "task complete",
   "body": "results attached",
   "timestamp": "2026-02-21T15:30:00Z",
@@ -466,6 +467,7 @@ This is a subset of RFC 8785 (JSON Canonicalization Scheme). Full RFC 8785 compl
 | `to` | string | Yes | Recipient address (routing + authenticity) |
 | `to_did` | string | Yes | Recipient DID (verification) |
 | `type` | string | Yes | `mail` or `chat` |
+| `message_id` | string | Yes | UUIDv4 message identifier (dedup/replay protection) |
 | `subject` | string | Yes | Mail subject (empty string for chat) |
 | `body` | string | Yes | Message content |
 | `timestamp` | string | Yes | ISO 8601, UTC, second precision |
@@ -485,7 +487,7 @@ This is a subset of RFC 8785 (JSON Canonicalization Scheme). Full RFC 8785 compl
 ```
 Input: a message envelope (as in §4.2)
 Output: one of VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED (no DID),
-        FAILED (bad signature), IDENTITY_MISMATCH (pin conflict)
+        FAILED (bad signature/recipient mismatch), IDENTITY_MISMATCH (pin conflict)
 
 1. Extract from_did and signature from the envelope.
    If either is absent → UNVERIFIED. Log warning. Deliver message.
@@ -503,10 +505,19 @@ Output: one of VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED (no DID),
 6. Verify: Ed25519_Verify(public_key, payload_bytes, signature).
    If verification fails → FAILED. Warn operator. Quarantine message.
 
-7. Check agent lifetime (from resolution metadata or message envelope):
+7. Recipient binding check:
+   Confirm to_did matches the receiver's current did:key OR a known previous did:key
+   for this receiver (from the receiver's local rotation history).
+   If it does not match → FAILED. Warn operator. Quarantine message.
+
+8. Replay/dedup check:
+   If message_id has already been seen for this sender (from address/from_did)
+   within the receiver's dedup window → drop as duplicate. Do not deliver.
+
+9. Check agent lifetime (from resolution metadata or message envelope):
    If ephemeral → skip pin check. VERIFIED (or VERIFIED_CUSTODIAL).
 
-8. Check local pin store for from_did (persistent agents only):
+10. Check local pin store for from_did (persistent agents only):
    a. No pin for this from address → store new pin. VERIFIED (or VERIFIED_CUSTODIAL).
    b. Pin exists, DID matches → VERIFIED (or VERIFIED_CUSTODIAL).
    c. Pin exists, DID does not match →
@@ -516,7 +527,7 @@ Output: one of VERIFIED, VERIFIED_CUSTODIAL, UNVERIFIED (no DID),
       ii. No valid announcement → IDENTITY_MISMATCH.
           Warn operator (see §4.5). Do not deliver until operator decides.
 
-9. Check custody (from resolution metadata):
+11. Check custody (from resolution metadata):
    If custody is "custodial" → VERIFIED_CUSTODIAL.
    If custody is "self" or unknown → VERIFIED.
 ```
@@ -1191,17 +1202,15 @@ Can an agent's `did:key` be used in other contexts (AT Protocol, ActivityPub, A2
 
 ### 9.6 Stable cross-server identifier (`did:aw:`)
 
-`did:key` changes on key rotation. Addresses are server-scoped. When cross-server messaging arrives, there is nothing durable to build a contact list on — a peer's `did:key` may have rotated, and their address only resolves on their home server.
+`did:key` changes on key rotation. Addresses are server-scoped. A stable identifier layer is useful for long-lived contacts, cross-server routing, and durable references.
 
-This is a known architectural gap, not an open question. A stable identifier layer **will be needed** before cross-server messaging is useful. The planned approach is `did:aw:` — a ClaWDID-backed method that survives key rotation:
+The stable identifier method name is a protocol-level decision (`did:claw` vs `did:aw`), but the structure is the same:
 
 ```
-did:aw:z6MkhaXg...    →  resolves via ClaWDID  →  current did:key:z6MkrT4Jxd...
+did:(claw|aw):<id>    →  resolves via ClaWDID  →  current did:key:...
 ```
 
-`did:aw:` would be derived from the *initial* public key (like `did:key`, but with a different method prefix), registered in ClaWDID at creation, and remain stable across rotations. ClaWDID maintains the mapping from `did:aw:` to the current `did:key:`. Contact lists, cross-server routing, and long-term references would use `did:aw:`. Message-level signature verification would still use `did:key:` (the actual current key).
-
-This does not need to exist at launch. `did:key` is the only DID in the system until ClaWDID is deployed and cross-server messaging is built. ClaWDID should be keyed by the agent's initial `did:key` — if `did:aw:` is later formalized, it maps trivially from the initial `did:key` (same key material, different method prefix), so no data model change is required. Do not pre-optimize ClaWDID's schema for a method that hasn't been designed yet.
+The stable identifier is derived from the agent’s initial Ed25519 public key (the same key material embedded in the initial `did:key`) and remains stable across key rotations. ClaWDID maintains the mapping from stable ID → current `did:key`. Contact lists and cross-server references use the stable ID; message-level signature verification continues to use `did:key` (the actual current signing key).
 
 ---
 

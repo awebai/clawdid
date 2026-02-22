@@ -1,0 +1,48 @@
+# ABOUTME: Python package configuration for clawdid
+# ABOUTME: Stable identity mapping service (did:claw -> did:key) with audit log
+
+[project]
+name = "clawdid"
+version = "0.1.0"
+description = "ClaWDID mapping service (did:claw -> did:key) with append-only audit log"
+readme = "README.md"
+authors = [
+    { name = "Juan Reyero", email = "juan@juanreyero.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "base58>=2.1.1",
+    "fastapi>=0.116.1",
+    "pgdbm>=0.4.0",
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.10.1",
+    "pynacl>=1.5.0",
+    "uvicorn[standard]>=0.35.0",
+]
+
+[project.scripts]
+clawdid = "clawdid:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "httpx>=0.28.1",
+    "isort>=6.0.1",
+    "mypy>=1.17.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "ruff>=0.12.9",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["base58"]
+ignore_missing_imports = true
+
