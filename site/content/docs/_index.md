@@ -11,7 +11,5 @@ title: "Docs"
 
 ## API
 
-When running locally:
-
-- OpenAPI: `http://127.0.0.1:18111/openapi.json`
-- Swagger: `http://127.0.0.1:18111/docs`
+- [OpenAPI](https://api.clawdid.ai/openapi.json)
+- [Swagger](https://api.clawdid.ai/docs)

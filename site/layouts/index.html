@@ -1,7 +1,10 @@
 {{ define "main" }}
 <section class="hero">
   <h1>ClawDID</h1>
-  <p class="tagline">{{ .Site.Params.tagline }}</p>
+  <p class="tagline">
+    {{ .Site.Params.tagline }}<br />
+    <span class="tagline-sub">{{ .Site.Params.subtitle }}</span>
+  </p>
 
   <div class="actions">
     <a class="btn" href="{{ .Site.Params.verifierUrl }}">Try the verifier</a>
@@ -11,32 +14,75 @@
   <div class="card">
     <h2>What it is</h2>
     <p>
-      ClawDID is an open-source stable-ID mapping service and append-only audit log. It maps
-      a stable identifier (like <code>did:claw:...</code>) to an agent’s current <code>did:key</code>,
-      and publishes a verifiable mutation history for rotations and migrations.
+      ClawDID is a mapping service and append-only audit log for agent identity continuity. It gives an agent a
+      stable identifier (<code>did:claw:…</code>) that points to the agent’s current verification key
+      (<code>did:key</code>), and it records signed, hash‑chained updates when that key rotates or when the agent
+      moves between servers.
     </p>
+  </div>
+
+  <div class="card">
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li>
+        Agents sign messages with an Ed25519 key. The verification key is encoded directly in <code>did:key</code>,
+        so signatures verify offline with zero network calls.
+      </li>
+      <li>
+        If you need a stable identity, register a <code>did:claw</code> and prove you control the current
+        <code>did:key</code>.
+      </li>
+      <li>
+        When you rotate keys or move servers, publish a new signed log entry that links to the previous one.
+      </li>
+      <li>
+        Verifiers can resolve <code>did:claw → did:key</code> to cross‑check continuity. If ClawDID is unavailable,
+        message signature verification still works (you just lose the extra cross‑check).
+      </li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Example: verifying an inbound message</h2>
+    <ol class="steps">
+      <li>
+        You receive a message that includes a sender verification key (<code>from_did = did:key:…</code>) and may also
+        include a stable identity (<code>from_stable_id = did:claw:…</code>).
+      </li>
+      <li>
+        You verify the message signature offline against <code>from_did</code> (no registry lookup required).
+      </li>
+      <li>
+        If <code>from_stable_id</code> is present, you resolve <code>GET /did/{did:claw}/key</code> and verify the
+        returned <code>log_head</code> signature + hash chain.
+      </li>
+      <li>
+        If ClawDID’s <code>current_did_key</code> matches <code>from_did</code>, you accept continuity. If it conflicts
+        (or the head regresses/forks versus your cache), you treat it as a security-relevant identity mismatch.
+      </li>
+    </ol>
+    <p class="note">If ClawDID is unavailable or unverifiable, you can still verify signatures offline; you just lose the cross‑check.</p>
   </div>
 
   <div class="grid">
     <div class="card">
-      <h3>Offline verification</h3>
+      <h3>Offline signatures</h3>
       <p>
-        Messages are verified against <code>did:key</code> (the public key embedded in the DID) with zero network
-        calls. ClawDID adds continuity and auditability without replacing the base cryptography.
+        <code>did:key</code> is the public key. Verification stays self‑certifying and offline; ClawDID is additive
+        continuity, not a dependency.
       </p>
     </div>
     <div class="card">
-      <h3>Audit log</h3>
+      <h3>Append-only log</h3>
       <p>
-        ClawDID maintains a per-identity append-only log with hash chaining and Ed25519 signatures so verifiers can
-        check integrity from the data alone.
+        Every mutation is signed and hash‑chained. Given the log, anyone can verify integrity from the data alone.
       </p>
     </div>
     <div class="card">
       <h3>Roadmap</h3>
       <p>
-        Launch focuses on correctness and interoperability. Transparency witnesses and checkpointing are planned next.
-        See <a href="https://github.com/awebai/clawdid/blob/main/ROADMAP.md" target="_blank" rel="noreferrer">ROADMAP.md</a>.
+        Launch focuses on correctness and interoperability. Transparency witnesses and checkpointing are next. See
+        <a href="https://github.com/awebai/clawdid/blob/main/ROADMAP.md" target="_blank" rel="noreferrer">ROADMAP.md</a>.
       </p>
     </div>
   </div>

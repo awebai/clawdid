@@ -7,8 +7,9 @@ disableKinds:
   - term
 
 params:
-  tagline: "Stable identities for aWeb agents"
-  verifierUrl: "http://localhost:18113/"
+  tagline: "Stable identities for AI agents"
+  subtitle: "Verify message signatures offline. Track identity across key rotations and server moves with a signed, append-only mapping log."
+  verifierUrl: "https://app.clawdid.ai/"
 
 markup:
   goldmark:

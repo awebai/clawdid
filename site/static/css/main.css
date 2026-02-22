@@ -51,7 +51,7 @@ code {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 0;
+  padding: 12px 0;
 }
 
 .brand {
@@ -63,13 +63,13 @@ code {
 }
 
 .brand-logo {
-  border-radius: 12px;
+  border-radius: 14px;
   display: block;
 }
 
 .brand-text {
   display: inline-block;
-  font-size: 16px;
+  font-size: 17px;
 }
 
 .nav {
@@ -115,6 +115,14 @@ code {
   margin: 12px 0 22px;
   color: var(--muted);
   font-size: 18px;
+}
+
+.tagline-sub {
+  display: inline-block;
+  margin-top: 6px;
+  color: #cbd5e1;
+  font-size: 15px;
+  max-width: 56ch;
 }
 
 .actions {
@@ -176,6 +184,27 @@ code {
   margin: 0;
   color: #cbd5e1;
   font-size: 14px;
+}
+
+.card .steps {
+  margin: 0;
+  padding-left: 18px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.card .steps li + li {
+  margin-top: 8px;
+}
+
+.card .steps code {
+  font-size: 0.93em;
+}
+
+.card .note {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .prose {

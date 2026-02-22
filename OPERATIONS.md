@@ -29,14 +29,14 @@ This document describes how to deploy, verify, observe, and debug `clawdid` in p
 
 ## Verify A Deploy (No Guessing)
 
-After deploy finishes, verify against the production hostname (expected: `https://clawdid.ai`):
+After deploy finishes, verify against the production API hostname (expected: `https://api.clawdid.ai`):
 
 1. Verify build identity:
-   - `curl -fsS https://clawdid.ai/api/v1/release | jq .`
+   - `curl -fsS https://api.clawdid.ai/api/v1/release | jq .`
 2. Verify readiness:
-   - `curl -fsS https://clawdid.ai/ready | jq .`
+   - `curl -fsS https://api.clawdid.ai/ready | jq .`
 3. Verify OpenAPI:
-   - `curl -fsS https://clawdid.ai/openapi.json | jq '.info.title,.info.version'`
+   - `curl -fsS https://api.clawdid.ai/openapi.json | jq '.info.title,.info.version'`
 
 ## Environment Variables
 
