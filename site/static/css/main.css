@@ -416,6 +416,53 @@ code {
   border-left-color: var(--brand);
 }
 
+.docs-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.docs-title-row h1 {
+  margin: 0;
+}
+
+.docs-llms {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+.docs-llms a {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.docs-llms a:hover {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.llms-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.llms-copy:hover {
+  color: var(--text);
+}
+
 .docs-content {
   flex: 1;
   min-width: 0;

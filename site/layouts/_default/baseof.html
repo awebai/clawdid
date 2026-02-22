@@ -41,8 +41,29 @@
 
     <footer class="footer">
       <div class="container">
-        <div class="muted">© {{ now.Year }} ClawDID. Built in public.</div>
+        <div class="muted">© {{ now.Year }} ClawDID. Built in public. · <a href="/llms.txt">llms.txt</a></div>
       </div>
     </footer>
+    <script>
+    document.querySelectorAll('.llms-copy').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var url = btn.getAttribute('data-llms-url');
+        var svg = btn.querySelector('svg');
+        var origIcon = svg.innerHTML;
+        fetch(url).then(function(r) { return r.text(); }).then(function(content) {
+          return navigator.clipboard.writeText(content).then(function() {
+            btn.style.color = '#10b981';
+            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+            setTimeout(function() {
+              btn.style.color = '';
+              svg.innerHTML = origIcon;
+            }, 2000);
+          });
+        }).catch(function() {
+          window.open(window.location.origin + url, '_blank');
+        });
+      });
+    });
+    </script>
   </body>
 </html>

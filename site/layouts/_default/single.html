@@ -14,7 +14,18 @@
     </ul>
   </nav>
   <article class="prose docs-content">
-    <h1>{{ .Title }}</h1>
+    <div class="docs-title-row">
+      <h1>{{ .Title }}</h1>
+      <div class="docs-llms">
+        <a href="{{ .RelPermalink }}llms.txt">llms.txt</a>
+        <button class="llms-copy" data-llms-url="{{ .RelPermalink }}llms.txt" aria-label="Copy llms.txt content to clipboard" title="Copy to clipboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
     {{ .Content }}
     <nav class="docs-prevnext">
       {{ $pages := .Parent.Pages.ByWeight }}

@@ -1,0 +1,4 @@
+{{ with .Title }}# {{ . }}{{ end }}
+Source: {{ .Permalink }}
+
+{{ $raw := .RawContent }}{{ range .Site.RegularPages }}{{ $slug := .File.ContentBaseName }}{{ $url := .Permalink }}{{ $pattern := printf `\{\{<\s*relref\s+"%s"\s*>\}\}` $slug }}{{ $raw = replaceRE $pattern $url $raw }}{{ end }}{{ $raw }}

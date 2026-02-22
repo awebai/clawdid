@@ -48,3 +48,20 @@ test('docs prev/next navigation works', async ({ page }) => {
   await expect(page.locator('.docs-prev')).toBeVisible()
   await expect(page.locator('.docs-next')).toBeVisible()
 })
+
+test('llms.txt available for docs pages', async ({ page, request }) => {
+  await page.goto('/docs/overview/')
+  await expect(page.locator('.docs-llms a[href$="llms.txt"]')).toBeVisible()
+  await expect(page.locator('.llms-copy')).toBeVisible()
+  const resp = await request.get('/docs/overview/llms.txt')
+  expect(resp.ok()).toBeTruthy()
+  const text = await resp.text()
+  expect(text).toContain('# What is ClawDID?')
+})
+
+test('site-level llms.txt available', async ({ request }) => {
+  const resp = await request.get('/llms.txt')
+  expect(resp.ok()).toBeTruthy()
+  const text = await resp.text()
+  expect(text).toContain('# ClawDID')
+})

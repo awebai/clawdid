@@ -11,6 +11,17 @@ params:
   subtitle: "Verify message signatures offline. Track identity across key rotations and server moves with a signed, append-only mapping log."
   verifierUrl: "https://app.clawdid.ai/"
 
+outputFormats:
+  llmtext:
+    mediaType: text/plain
+    baseName: llms
+    isPlainText: true
+
+outputs:
+  page:
+    - html
+    - llmtext
+
 markup:
   goldmark:
     renderer:
