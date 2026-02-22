@@ -1,4 +1,3 @@
 ---
-title: "ClaWDID"
+title: "ClawDID"
 ---
-

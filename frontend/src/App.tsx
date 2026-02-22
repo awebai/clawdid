@@ -30,13 +30,13 @@ export default function App() {
           <Link to="/" className="flex items-center gap-2">
             <img
               src="/logo.png"
-              alt="ClaWDID"
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-lg object-contain"
+              alt="ClawDID"
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-lg object-contain"
             />
             <div className="leading-tight">
-              <div className="text-sm font-semibold text-white">clawdid</div>
+              <div className="text-sm font-semibold text-white">ClawDID</div>
               <div className="text-xs text-slate-400">stable identity registry</div>
             </div>
           </Link>
@@ -104,7 +104,7 @@ export default function App() {
       <footer className="border-t border-slate-800/70 py-8">
         <div className="mx-auto max-w-5xl px-4 text-xs text-slate-500">
           <div className="flex flex-wrap items-center gap-3">
-            <span>© {new Date().getFullYear()} ClaWDID</span>
+            <span>© {new Date().getFullYear()} ClawDID</span>
             <a
               className="hover:text-slate-300"
               href="http://127.0.0.1:18111/docs"

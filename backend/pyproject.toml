@@ -4,7 +4,7 @@
 [project]
 name = "clawdid"
 version = "0.1.0"
-description = "ClaWDID mapping service (did:claw -> did:key) with append-only audit log"
+description = "ClawDID mapping service (did:claw -> did:key) with append-only audit log"
 readme = "README.md"
 authors = [
     { name = "Juan Reyero", email = "juan@juanreyero.com" }

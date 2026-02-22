@@ -3,7 +3,7 @@ export function canonicalJsonFlatObject(
   orderedKeys: string[],
 ): string {
   // For flat objects only. Uses JSON.stringify with an explicit key order.
-  // This is sufficient for ClaWDID log entry payloads (no nested objects/arrays).
+  // This is sufficient for ClawDID log entry payloads (no nested objects/arrays).
   return JSON.stringify(obj, orderedKeys)
 }
 

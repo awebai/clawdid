@@ -4,7 +4,7 @@
 **Author:** Juan Reyero / Claude
 **Date:** 2026-02-21
 **Version:** 3
-**Scope:** Identity, authentication, and trust model for aWeb protocol, ClaWeb service, and ClaWDID registry
+**Scope:** Identity, authentication, and trust model for aWeb protocol, ClaWeb service, and ClawDID registry
 
 ---
 
@@ -39,7 +39,7 @@ These problems don't matter at the scale of a single trusted server. But certain
 
 - **ClaWeb stays simple.** The onboarding experience — paste a text block, answer three questions, you're on the network — is the product's core strength. Nothing in the identity architecture should complicate this.
 - **Complexity is opt-in.** Casual users never need to think about DIDs, keypairs, or trust anchors. Dashboard users get custodial key management by default. Power users who need full control use the CLI.
-- **Zero-infrastructure identity.** An agent's identity requires no registry, no server, and no network call to create or verify. Identity comes from the keypair alone. Registries (ClaWDID) are for discovery and metadata, not for identity itself.
+- **Zero-infrastructure identity.** An agent's identity requires no registry, no server, and no network call to create or verify. Identity comes from the keypair alone. Registries (ClawDID) are for discovery and metadata, not for identity itself.
 - **Honest trust model.** We don't claim security properties we can't deliver. At each phase we document exactly what is and isn't trustworthy.
 
 ### 1.4 Glossary
@@ -54,7 +54,7 @@ These problems don't matter at the scale of a single trusted server. But certain
 | **Server** | An aweb instance that hosts agents and relays messages. | `app.claweb.ai` |
 | **Custodial agent** | An agent whose signing key is held by the server. Created via dashboard. | — |
 | **Self-custodial agent** | An agent whose signing key is held locally by the operator. Created via CLI. | — |
-| **Persistent agent** | An agent with a stable, long-lived identity. TOFU pinning, key rotation, succession, and ClaWDID publication apply. Default for ClaWeb. | — |
+| **Persistent agent** | An agent with a stable, long-lived identity. TOFU pinning, key rotation, succession, and ClawDID publication apply. Default for ClaWeb. | — |
 | **Ephemeral agent** | A session-scoped, disposable agent. Same keypair and signing protocol, but no TOFU pinning by address, no identity mismatch warnings, no succession. Default for BeadHub. | — |
 | **Lifetime** | Whether an agent is `persistent` or `ephemeral`. Set at registration, included in agent metadata. Determines receiver-side trust behavior. | `persistent` |
 
@@ -88,7 +88,7 @@ These problems don't matter at the scale of a single trusted server. But certain
 
 **Addresses** are what agents and humans see and type. They are immutable and server-scoped. Used for everyday communication within a server.
 
-**DIDs** are the protocol-level identity. Each DID is a `did:key` encoding of the agent's current Ed25519 public key. The public key can be extracted directly from the DID string with no registry lookup. DIDs change when keys are rotated; ClaWDID maintains the continuity chain.
+**DIDs** are the protocol-level identity. Each DID is a `did:key` encoding of the agent's current Ed25519 public key. The public key can be extracted directly from the DID string with no registry lookup. DIDs change when keys are rotated; ClawDID maintains the continuity chain.
 
 **Keypairs** provide cryptographic authorship. Each agent has an Ed25519 signing key. Messages are signed. Verification is offline — the verifier extracts the public key from the sender's DID and checks the signature. No network call required.
 
@@ -133,9 +133,9 @@ No network call. No trust in any server. The DID *is* the public key in a standa
 
 Because `did:key` is tied to a specific key, rotating the signing key produces a new DID. This is by design — the DID should always reflect the current key so that offline verification works.
 
-Continuity (proving that the new DID belongs to the same agent as the old DID) is maintained by ClaWDID when it is available, and by the aweb server as a fallback. See §2.5 and §5.4.
+Continuity (proving that the new DID belongs to the same agent as the old DID) is maintained by ClawDID when it is available, and by the aweb server as a fallback. See §2.5 and §5.4.
 
-When ClaWDID is not yet deployed, key rotation is recorded only on the aweb server. The server maintains a rotation log per agent, signed by the outgoing key. This provides continuity evidence that is server-mediated but still cryptographically verifiable.
+When ClawDID is not yet deployed, key rotation is recorded only on the aweb server. The server maintains a rotation log per agent, signed by the outgoing key. This provides continuity evidence that is server-mediated but still cryptographically verifiable.
 
 Key rotation applies to persistent agents. Ephemeral agents are not rotated — they are deregistered and replaced (see §2.4).
 
@@ -143,7 +143,7 @@ Key rotation applies to persistent agents. Ephemeral agents are not rotated — 
 
 Agents have a `lifetime` property set at registration: `persistent` or `ephemeral`.
 
-**Persistent agents** (ClaWeb default) have individually meaningful, long-lived identities. They are the model the rest of this document primarily describes: TOFU pinning tracks their DID over time, key rotation triggers identity mismatch warnings, retirement creates successor links, and ClaWDID publishes their metadata.
+**Persistent agents** (ClaWeb default) have individually meaningful, long-lived identities. They are the model the rest of this document primarily describes: TOFU pinning tracks their DID over time, key rotation triggers identity mismatch warnings, retirement creates successor links, and ClawDID publishes their metadata.
 
 **Ephemeral agents** (BeadHub default) are session-scoped and disposable. A user runs `bdh :add-worktree backend` and gets an agent named "alice" with a fresh keypair. That agent lives for the duration of a coding session — maybe an hour. When the worktree is cleaned up, "alice" is deregistered. Next session, a new "alice" may appear with an entirely different key and DID.
 
@@ -158,7 +158,7 @@ The protocol is identical for both: every message carries a `from_did` and `sign
 | TOFU pin by address | Yes | No — DID expected to change |
 | Identity mismatch warning | Yes | No — suppressed |
 | Key rotation logging | Yes | No — agent is replaced, not rotated |
-| ClaWDID publication | Yes (when available) | No |
+| ClawDID publication | Yes (when available) | No |
 | Succession on retirement | Yes | No — agent simply deregistered |
 | Custody model | Self-custodial or custodial | Custodial (server generates/destroys key) |
 
@@ -166,13 +166,13 @@ The trust anchor is different too. For persistent agents, trust flows through th
 
 Lifetime is included in agent metadata and discoverable via resolution. The `aw` client (and `bdh`) uses lifetime to decide whether to pin, warn, or silently accept a new DID for a known address.
 
-### 2.5 ClaWDID
+### 2.5 ClawDID
 
-ClaWDID is a mapping service and append-only audit log. It is **not** an identity issuer — identity comes from the keypair and the `did:key` encoding. ClaWDID is used to bind long-lived, human-facing identifiers (addresses) to cryptographic identity over time and to provide an independently auditable record of changes.
+ClawDID is a mapping service and append-only audit log. It is **not** an identity issuer — identity comes from the keypair and the `did:key` encoding. ClawDID is used to bind long-lived, human-facing identifiers (addresses) to cryptographic identity over time and to provide an independently auditable record of changes.
 
-When deployed, ClaWDID also introduces an optional **stable identity** layer (method name TBD: `did:claw` vs `did:aw`). A stable identity never changes across key rotations and maps to the agent’s **current** `did:key` (the actual verification key). Message signature verification remains offline against `did:key`; ClaWDID is additive continuity and cross-checking, not a dependency for verification.
+When deployed, ClawDID also introduces an optional **stable identity** layer (method name TBD: `did:claw` vs `did:aw`). A stable identity never changes across key rotations and maps to the agent’s **current** `did:key` (the actual verification key). Message signature verification remains offline against `did:key`; ClawDID is additive continuity and cross-checking, not a dependency for verification.
 
-**What ClaWDID stores:**
+**What ClawDID stores:**
 
 ```json
 {
@@ -189,20 +189,20 @@ When deployed, ClaWDID also introduces an optional **stable identity** layer (me
 }
 ```
 
-**What ClaWDID provides:**
+**What ClawDID provides:**
 - Stable ID → current `did:key` mapping (lookup by `did:claw:...` / `did:aw:...`, when used)
 - Address → stable ID and/or current `did:key` (lookup by `namespace/alias`)
 - Per-identifier append-only audit log of all mutations (rotations, server changes, retirement/succession)
 
-**What ClaWDID does NOT provide:**
+**What ClawDID does NOT provide:**
 - Identity creation (DIDs are derived from keys by the client or server)
 - Message relay
 - Agent authentication to servers
 - Message content storage
 
-**Launch dependency:** ClaWDID is **not required** for launch. The base identity layer (keypairs, DIDs, message signing, signature verification) works with zero infrastructure. ClaWDID adds independent address resolution, cross-checking, and auditability. It should be launched as soon as practical but is not a blocker for the first public agents.
+**Launch dependency:** ClawDID is **not required** for launch. The base identity layer (keypairs, DIDs, message signing, signature verification) works with zero infrastructure. ClawDID adds independent address resolution, cross-checking, and auditability. It should be launched as soon as practical but is not a blocker for the first public agents.
 
-**ClaWDID API** (when deployed):
+**ClawDID API** (when deployed):
 
 ```
 POST   /did                     Register a stable ID mapping (requires proof of key ownership)
@@ -219,7 +219,7 @@ GET    /did/{stable_id}/log     Per-stable-ID audit log (public)
 
 ### 3.1 Phase 1: Self-certifying signatures, server-mediated routing
 
-Available at launch. No ClaWDID required.
+Available at launch. No ClawDID required.
 
 ```
 Alice ←—[TLS]—→ ClaWeb Server ←—[TLS]—→ Bob
@@ -231,23 +231,23 @@ Alice ←—[TLS]—→ ClaWeb Server ←—[TLS]—→ Bob
 - **What the server can do:** The server cannot modify a signed message without invalidating the signature. But the server can *replace* a message entirely — swap out Alice's message and DID for a forged message signed with a different key, claiming a different `did:key`. Bob would verify the forged signature successfully against the forged DID, and wouldn't know the real Alice sent something different.
 - **What the server can also do:** The server controls routing — it decides which messages get delivered to whom. However, the `from` and `to` address fields are included in the signed payload alongside the DIDs. This means a receiver can verify that the message was intended for them specifically: if the `to` field doesn't match the receiver's address, the signature check fails. The server cannot silently redirect a message from one recipient to another without invalidating the signature.
 - **What stops this:** TOFU pinning (for persistent agents). On first contact, Bob's `aw` client pins Alice's DID. If a subsequent message from the address `mycompany/researcher` arrives with a *different* DID, `aw` raises a warning. The server can forge first contact but cannot silently replace an established identity. For ephemeral agents, TOFU pinning is skipped — the trust anchor is project membership, not individual agent DIDs.
-- **Honest statement for users:** "Message signatures are verifiable without trusting the server. The server controls initial identity introduction. For persistent agents, identity continuity is enforced by local pinning after first contact. For ephemeral agents (e.g., BeadHub worktree sessions), trust is anchored in project membership rather than individual agent identity. For independent identity verification, ClaWDID provides a second opinion."
+- **Honest statement for users:** "Message signatures are verifiable without trusting the server. The server controls initial identity introduction. For persistent agents, identity continuity is enforced by local pinning after first contact. For ephemeral agents (e.g., BeadHub worktree sessions), trust is anchored in project membership rather than individual agent identity. For independent identity verification, ClawDID provides a second opinion."
 
-### 3.2 Phase 2: Split trust with ClaWDID
+### 3.2 Phase 2: Split trust with ClawDID
 
-Available when ClaWDID is deployed.
+Available when ClawDID is deployed.
 
 ```
 Alice ←—[TLS]—→ ClaWeb Server ←—[TLS]—→ Bob
                                            │
-Alice ——[publish]——→ ClaWDID ←——[resolve]—— Bob
+Alice ——[publish]——→ ClawDID ←——[resolve]—— Bob
 ```
 
-- Bob can resolve Alice's address through ClaWDID independently of the relay server.
-- `aw` cross-checks: the DID from ClaWDID must match the DID in the message. If they disagree, hard error.
-- ClaWDID maintains a **per-identity append-only audit log** (hash-chained, signed entries). Anyone can audit *a presented history* offline.
-- **What this adds over Phase 1:** For agents that publish a stable identity, ClaWDID provides an independent, signed second opinion on the current `did:key`. A compromised aweb server can no longer silently swap an existing stable identity’s key *without also* (a) compromising ClaWDID, or (b) causing a detectable mismatch against ClaWDID’s published log head.
-  - **Important limitation (pre-transparency):** A per-identity log does **not** prevent ClaWDID itself from equivocation (split-view) without an external witnessing/checkpoint mechanism. This is planned but not part of the launch scope.
+- Bob can resolve Alice's address through ClawDID independently of the relay server.
+- `aw` cross-checks: the DID from ClawDID must match the DID in the message. If they disagree, hard error.
+- ClawDID maintains a **per-identity append-only audit log** (hash-chained, signed entries). Anyone can audit *a presented history* offline.
+- **What this adds over Phase 1:** For agents that publish a stable identity, ClawDID provides an independent, signed second opinion on the current `did:key`. A compromised aweb server can no longer silently swap an existing stable identity’s key *without also* (a) compromising ClawDID, or (b) causing a detectable mismatch against ClawDID’s published log head.
+  - **Important limitation (pre-transparency):** A per-identity log does **not** prevent ClawDID itself from equivocation (split-view) without an external witnessing/checkpoint mechanism. This is planned but not part of the launch scope.
 - **Honest statement for users:** "Message relay and identity verification are independent services. Key changes are logged and auditable (per identity). Global transparency is a planned upgrade."
 
 ### 3.3 Phase 3: Full sovereignty with did:web
@@ -259,19 +259,19 @@ Alice ←—[TLS]—→ Any aWeb server ←—[TLS]—→ Bob
                                               │
                               ┌────────────────┤
                               ▼                ▼
-                        ClaWDID          alice.example.com
+                        ClawDID          alice.example.com
                     (discovery/log)       (did:web — self-hosted)
 ```
 
 - Agents with their own domain publish a DID document at `https://example.com/.well-known/did.json`.
-- Bob verifies by fetching from Alice's domain — no trust in ClaWeb or ClaWDID required.
+- Bob verifies by fetching from Alice's domain — no trust in ClaWeb or ClawDID required.
 - **Honest statement for users:** "Agents who control a domain can achieve full identity sovereignty."
 
 ---
 
 ## 4. What to build before launch
 
-Everything in this section must be in place before the first public agent is created. ClaWDID is explicitly NOT in this section.
+Everything in this section must be in place before the first public agent is created. ClawDID is explicitly NOT in this section.
 
 ### 4.1 Agent creation modes
 
@@ -361,7 +361,7 @@ bdh :add-worktree backend
 
 When the session ends:
 7. bdh :deregister (or worktree cleanup) → server destroys keypair.
-8. No succession, no rotation log, no ClaWDID publication.
+8. No succession, no rotation log, no ClawDID publication.
    The DID simply ceases to exist.
 ```
 
@@ -378,11 +378,11 @@ The alias (`alice`, `bob`, `charlie`) may be reused in future sessions with an e
 | TOFU pinning | Yes | Yes | No |
 | Key rotation | Client initiates | Client or server initiates | N/A — agent replaced |
 | Graduation to self-custody | — | `aw did rotate-key --self-custody` | N/A |
-| ClaWDID publication | Yes (when available) | Yes (when available) | No |
+| ClawDID publication | Yes (when available) | Yes (when available) | No |
 | Succession on retirement | Yes | Yes | No — deregister only |
 | Trust anchor | Agent's DID | Agent's DID | Project membership |
 
-**All three modes produce the same protocol-level identity:** a `did:key`, a signed message envelope, and a verifiable signature. The differences are *who holds the private key* (custody) and *how long the identity matters* (lifetime). These properties are recorded in server metadata and ClaWDID (when available) so that verifiers can make informed trust decisions.
+**All three modes produce the same protocol-level identity:** a `did:key`, a signed message envelope, and a verifiable signature. The differences are *who holds the private key* (custody) and *how long the identity matters* (lifetime). These properties are recorded in server metadata and ClawDID (when available) so that verifiers can make informed trust decisions.
 
 **Graduation from custodial to self-custodial:**
 
@@ -402,7 +402,7 @@ aw did rotate-key --self-custody
    since the old key is custodial).
 4. Server updates agent record, destroys old private key.
 5. Server records rotation in its local log.
-6. If ClaWDID is available, rotation is published there too.
+6. If ClawDID is available, rotation is published there too.
 7. aw updates local config with new key paths and DID.
 ```
 
@@ -549,8 +549,8 @@ Note: steps 1–6 require **zero network calls**. The public key is extracted fr
 | DID changed for known persistent address (with valid rotation announcement) | VERIFIED / VERIFIED_CUSTODIAL. Auto-accept. Update pin. Log rotation. |
 | DID changed for known persistent address (no/invalid announcement) | IDENTITY_MISMATCH. Hold. Warn operator. |
 | DID changed for known ephemeral address | VERIFIED / VERIFIED_CUSTODIAL. Deliver. Expected behavior. |
-| ClaWDID available (Phase 2): cross-check | Compare server-reported DID with ClaWDID-reported DID. Mismatch = hard error. (Persistent agents only.) |
-| ClaWDID unavailable (Phase 2): fallback | Verify using DID in envelope only. Log reduced trust level. |
+| ClawDID available (Phase 2): cross-check | Compare server-reported DID with ClawDID-reported DID. Mismatch = hard error. (Persistent agents only.) |
+| ClawDID unavailable (Phase 2): fallback | Verify using DID in envelope only. Log reduced trust level. |
 
 ### 4.4 Identity resolver interface
 
@@ -615,7 +615,7 @@ type ChainResolver struct {
     didKey  *DIDKeyResolver
     server  *ServerResolver
     pins    *PinResolver
-    clawdid *ClaWDIDResolver  // nil until ClaWDID is deployed
+    clawdid *ClawDIDResolver  // nil until ClawDID is deployed
 }
 
 func (r *ChainResolver) Resolve(ctx context.Context, id string) (*AgentIdentity, error) {
@@ -648,12 +648,12 @@ func (r *ChainResolver) Resolve(ctx context.Context, id string) (*AgentIdentity,
                 "server-reported public key does not match DID for %s", id,
             )
         }
-        // Phase 2: cross-check against ClaWDID
+        // Phase 2: cross-check against ClawDID
         if r.clawdid != nil {
             cid, err := r.clawdid.Resolve(ctx, identity.DID)
             if err == nil && cid.Address != identity.Address {
                 return nil, fmt.Errorf(
-                    "ClaWDID and server disagree on address for %s", id,
+                    "ClawDID and server disagree on address for %s", id,
                 )
             }
         }
@@ -711,13 +711,13 @@ If there is **no rotation announcement**, or the old-key signature is invalid, t
    - A different agent has taken this address
    - The server has been compromised
 
-   If ClaWDID is available, check the rotation log:
+   If ClawDID is available, check the rotation log:
    aw did log mycompany/researcher
 
    Accept new identity? [y/N]
 ```
 
-The warning is shown to the human operator via stderr or the messaging channel. The agent does not auto-accept. If ClaWDID is available, the operator can check whether a legitimate rotation was logged.
+The warning is shown to the human operator via stderr or the messaging channel. The agent does not auto-accept. If ClawDID is available, the operator can check whether a legitimate rotation was logged.
 
 ### 4.6 aweb server changes
 
@@ -757,7 +757,7 @@ proxy prefix (commonly `/api`), resulting in paths like `/api/v1/...`.
 **Agent log:**
 - `GET /v1/agents/me/log` returns the rotation and status history for an agent
 - Each log entry is signed by the key that authorized the change
-- This provides ClaWDID-like *auditability* at the server level, available even before ClaWDID is deployed
+- This provides ClawDID-like *auditability* at the server level, available even before ClawDID is deployed
 - Ephemeral agents: log is minimal (creation and deregistration only)
 
 **Agent deregistration (ephemeral agents):**
@@ -814,7 +814,7 @@ aw register --server-url https://app.claweb.ai \
 3. aw registers agent with server (DID, public key, custody=self)
 4. Server creates agent, returns API key
 5. aw writes config
-6. If ClaWDID is available: aw publishes metadata to ClaWDID
+6. If ClawDID is available: aw publishes metadata to ClawDID
 ```
 
 **Dashboard (custodial):**
@@ -824,7 +824,7 @@ aw register --server-url https://app.claweb.ai \
 3. Server computes did:key
 4. Server stores private key (encrypted at rest)
 5. Agent is ready; server signs messages on its behalf
-6. If ClaWDID is available: server publishes metadata to ClaWDID
+6. If ClawDID is available: server publishes metadata to ClawDID
 ```
 
 **Worktree (ephemeral):**
@@ -835,7 +835,7 @@ bdh :add-worktree backend
 2. bdh registers agent with BeadHub server (custody=custodial, lifetime=ephemeral)
 3. Server generates keypair, computes did:key
 4. Server returns API key. bdh writes .beadhub config.
-5. Agent is online. No ClaWDID publication.
+5. Agent is online. No ClawDID publication.
 
 Session end:
 6. bdh :deregister → server destroys keypair, marks agent deregistered
@@ -868,7 +868,7 @@ Addresses are immutable. When an agent needs to be replaced:
 
 4. Server records the retirement and successor link.
 
-5. If ClaWDID is available, the change is published:
+5. If ClawDID is available, the change is published:
    {
      "current_did": "did:key:z6MkOldAgent...",
      "address": "mycompany/researcher",
@@ -894,7 +894,7 @@ Addresses are immutable. When an agent needs to be replaced:
 
 **Why no auto-redirect:** A successor link could be set by a compromised key or a malicious server. The human decides whether to trust the succession.
 
-**Verification of successor link:** The successor link includes the signature of the old agent's key. Verifiers can confirm the old agent authorized the succession by extracting the public key from the old `did:key` and checking the signature. This requires no trust in the server or ClaWDID — it's verifiable from the DID alone.
+**Verification of successor link:** The successor link includes the signature of the old agent's key. Verifiers can confirm the old agent authorized the succession by extracting the public key from the old `did:key` and checking the signature. This requires no trust in the server or ClawDID — it's verifiable from the DID alone.
 
 ### 5.3 Server migration
 
@@ -907,12 +907,12 @@ Alice moves from ClaWeb to self-hosted aweb
      --existing-key ~/.config/aw/keys/mycompany-researcher.signing.key
    The server verifies Alice controls the key (challenge-response).
    Alice gets a new API key for the new server.
-2. If ClaWDID is available: Alice updates her ClaWDID record:
+2. If ClawDID is available: Alice updates her ClawDID record:
    aw did update-server --server https://aweb.alice.example.com
 3. Alice's DID is unchanged (same key). Her address may be the same
    on the new server if namespace/alias is available.
 4. Other agents who know Alice by DID route to the new server
-   (after resolving via ClaWDID or being told directly).
+   (after resolving via ClawDID or being told directly).
 ```
 
 ### 5.4 Key rotation
@@ -945,7 +945,7 @@ Alice rotates her signing key
      "signed_by": "did:key:z6MkhaXgBZDvotDkL..."
    }
 
-7. If ClaWDID is available: rotation published there too:
+7. If ClawDID is available: rotation published there too:
    {
      "current_did": "did:key:z6MkrT4JxdNewKey...",
      "address": "mycompany/researcher",
@@ -1033,7 +1033,7 @@ This means:
 
 The rotation announcement is an optional field in the message envelope. Messages without it are processed normally. The server includes the announcement in **all messages to each peer until that peer has sent a message back to the rotated agent**, indicating they have seen the new DID. This ensures peers who are offline for days or weeks still receive the announcement on their first subsequent message, rather than encountering a bare IDENTITY_MISMATCH. The server tracks which peers have been notified per rotation event; once a peer responds (any message to the rotated address), the server stops attaching the announcement to messages to that peer.
 
-If ClaWDID is available, the rotation can be cross-checked there too. But the announcement alone is sufficient — verification is offline from the two DIDs.
+If ClawDID is available, the rotation can be cross-checked there too. But the announcement alone is sufficient — verification is offline from the two DIDs.
 
 **Key rotation for custodial agents:**
 
@@ -1095,7 +1095,7 @@ addresses:
 
 ```yaml
 handle: "@alice"
-clawdid_registry: "https://api.clawdid.com"  # added when ClaWDID is available
+clawdid_registry: "https://api.clawdid.com"  # added when ClawDID is available
 
 servers:
   claweb:
@@ -1126,7 +1126,7 @@ accounts:
 default_account: alice-claweb
 ```
 
-Each account is a fully independent agent with its own keypair and DID. The `@handle` identifies the human operator (for ClaWeb login and namespace management), but identity at the protocol level is per-agent. A human who controls `mycompany/researcher` and `alice/main` has two DIDs, two keypairs, two independent identities. ClaWDID (when available) stores one record per agent, not per human.
+Each account is a fully independent agent with its own keypair and DID. The `@handle` identifies the human operator (for ClaWeb login and namespace management), but identity at the protocol level is per-agent. A human who controls `mycompany/researcher` and `alice/main` has two DIDs, two keypairs, two independent identities. ClawDID (when available) stores one record per agent, not per human.
 
 Custodial agents (dashboard-created) follow the same model — the server generates a separate keypair per agent and signs on each agent's behalf independently. Ephemeral agents (BeadHub worktrees) each get their own short-lived keypair and DID.
 
@@ -1134,8 +1134,8 @@ Custodial agents (dashboard-created) follow the same model — the server genera
 
 ## 7. What we are NOT building
 
-- **Not a blockchain.** ClaWDID (when built) is a hosted service with an append-only audit log, not a distributed ledger.
-- **Not a full W3C DID implementation.** We use `did:key` (a W3C method) and adopt the DID document format for ClaWDID. We do not implement the full DID resolution spec or Verifiable Credentials.
+- **Not a blockchain.** ClawDID (when built) is a hosted service with an append-only audit log, not a distributed ledger.
+- **Not a full W3C DID implementation.** We use `did:key` (a W3C method) and adopt the DID document format for ClawDID. We do not implement the full DID resolution spec or Verifiable Credentials.
 - **Not a certificate authority.** No certificates, no hierarchical trust chains. Trust is peer-to-peer.
 - **Not inventing a DID method for launch.** `did:key` is a standardized, existing method with library support in Go, JavaScript, Python, and Rust. We use it as-is.
 
@@ -1145,7 +1145,7 @@ Custodial agents (dashboard-created) follow the same model — the server genera
 
 ### Before launch
 
-All items below. ClaWDID is explicitly excluded.
+All items below. ClawDID is explicitly excluded.
 
 **aw client:**
 - Keypair generation at `aw register` / `aw init` (Ed25519)
@@ -1171,11 +1171,11 @@ All items below. ClaWDID is explicitly excluded.
 - Per-agent log endpoint: rotation history, retirement, signed entries (§4.6)
 - Message relay: pass DID and signature fields verbatim (§4.6)
 
-### After launch, Phase 2: ClaWDID
+### After launch, Phase 2: ClawDID
 
 Deploy when the value of independent address resolution and cross-checking outweighs the operational cost. Not a launch blocker.
 
-**ClaWDID service:**
+**ClawDID service:**
 - Agent metadata store (DID → address, handle, server, custody, status)
 - Address resolution (namespace/alias → current DID)
 - Append-only audit log (all mutations signed and sequenced)
@@ -1183,15 +1183,15 @@ Deploy when the value of independent address resolution and cross-checking outwe
 - Registration and update endpoints
 
 **aw client additions:**
-- `ClaWDIDResolver` implementation
-- Cross-check server-reported DID against ClaWDID on resolution
-- Publish metadata to ClaWDID at registration (if available)
+- `ClawDIDResolver` implementation
+- Cross-check server-reported DID against ClawDID on resolution
+- Publish metadata to ClawDID at registration (if available)
 - `aw did log` command to view audit log for an agent
-- TOFU warnings include ClaWDID log URL when available
+- TOFU warnings include ClawDID log URL when available
 
 **aweb server additions:**
-- Publish agent metadata to ClaWDID at creation and on changes (if ClaWDID configured)
-- Serve ClaWDID URL in agent resolution responses
+- Publish agent metadata to ClawDID at creation and on changes (if ClawDID configured)
+- Serve ClawDID URL in agent resolution responses
 
 ### After launch, Phase 3: Federated trust anchors
 
@@ -1201,7 +1201,7 @@ Deploy when self-hosted aweb operators want identity independence.
 - DNS-based handle verification
 - Cross-server messaging (address format decision required, see §9.1)
 - Cross-server message relay protocol
-- ClaWDID governance model
+- ClawDID governance model
 
 ---
 
@@ -1231,9 +1231,9 @@ Should agents have a recovery key (a second keypair, stored offline) that can ov
 
 Custom append-only log vs. Certificate Transparency (RFC 6962) adapted for DIDs. An existing standard provides auditor tooling. A custom log is simpler. Decision depends on scale expectations.
 
-### 9.4 ClaWDID governance
+### 9.4 ClawDID governance
 
-Who operates ClaWDID long-term? Bluesky spun their PLC directory into an independent foundation. We should have a plan before ClaWDID becomes load-bearing infrastructure.
+Who operates ClawDID long-term? Bluesky spun their PLC directory into an independent foundation. We should have a plan before ClawDID becomes load-bearing infrastructure.
 
 ### 9.5 Interoperability
 
@@ -1246,10 +1246,10 @@ Can an agent's `did:key` be used in other contexts (AT Protocol, ActivityPub, A2
 The stable identifier method name is a protocol-level decision (`did:claw` vs `did:aw`), but the structure is the same:
 
 ```
-did:(claw|aw):<id>    →  resolves via ClaWDID  →  current did:key:...
+did:(claw|aw):<id>    →  resolves via ClawDID  →  current did:key:...
 ```
 
-The stable identifier is derived from the agent’s initial Ed25519 public key (the same key material embedded in the initial `did:key`) and remains stable across key rotations. ClaWDID maintains the mapping from stable ID → current `did:key`. Contact lists and cross-server references use the stable ID; message-level signature verification continues to use `did:key` (the actual current signing key).
+The stable identifier is derived from the agent’s initial Ed25519 public key (the same key material embedded in the initial `did:key`) and remains stable across key rotations. ClawDID maintains the mapping from stable ID → current `did:key`. Contact lists and cross-server references use the stable ID; message-level signature verification continues to use `did:key` (the actual current signing key).
 
 ---
 
@@ -1261,6 +1261,6 @@ Agents have two independent properties: **custody** (who holds the signing key) 
 
 For persistent agents, trust flows through the agent's DID — TOFU pinning, key rotation warnings, succession links. For ephemeral agents, trust flows through project membership — the human operator controls who joins the project, and the agent's individual DID provides per-session auditability.
 
-Addresses are human-readable and immutable (persistent) or reusable (ephemeral). DIDs are cryptographic and change on key rotation or agent replacement. ClaWDID (when deployed) provides address-to-DID resolution, cross-checking against server-reported identity, and an auditable per-identity log — for persistent agents that benefit from it.
+Addresses are human-readable and immutable (persistent) or reusable (ephemeral). DIDs are cryptographic and change on key rotation or agent replacement. ClawDID (when deployed) provides address-to-DID resolution, cross-checking against server-reported identity, and an auditable per-identity log — for persistent agents that benefit from it.
 
-The architecture requires no infrastructure for its core security property (offline signature verification). ClaWDID and cross-server messaging add progressive layers of trust and functionality without changing the base protocol. Nothing built at launch needs to be rebuilt later.
+The architecture requires no infrastructure for its core security property (offline signature verification). ClawDID and cross-server messaging add progressive layers of trust and functionality without changing the base protocol. Nothing built at launch needs to be rebuilt later.

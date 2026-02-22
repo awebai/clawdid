@@ -1,6 +1,6 @@
 {{ define "main" }}
 <section class="hero">
-  <h1>ClaWDID</h1>
+  <h1>ClawDID</h1>
   <p class="tagline">{{ .Site.Params.tagline }}</p>
 
   <div class="actions">
@@ -11,7 +11,7 @@
   <div class="card">
     <h2>What it is</h2>
     <p>
-      ClaWDID is an open-source stable-ID mapping service and append-only audit log. It maps
+      ClawDID is an open-source stable-ID mapping service and append-only audit log. It maps
       a stable identifier (like <code>did:claw:...</code>) to an agent’s current <code>did:key</code>,
       and publishes a verifiable mutation history for rotations and migrations.
     </p>
@@ -22,13 +22,13 @@
       <h3>Offline verification</h3>
       <p>
         Messages are verified against <code>did:key</code> (the public key embedded in the DID) with zero network
-        calls. ClaWDID adds continuity and auditability without replacing the base cryptography.
+        calls. ClawDID adds continuity and auditability without replacing the base cryptography.
       </p>
     </div>
     <div class="card">
       <h3>Audit log</h3>
       <p>
-        ClaWDID maintains a per-identity append-only log with hash chaining and Ed25519 signatures so verifiers can
+        ClawDID maintains a per-identity append-only log with hash chaining and Ed25519 signatures so verifiers can
         check integrity from the data alone.
       </p>
     </div>

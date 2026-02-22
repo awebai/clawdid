@@ -1,4 +1,4 @@
-# ClaWDID Operations Manual
+# ClawDID Operations Manual
 
 This document describes how to deploy, verify, observe, and debug `clawdid` in production.
 

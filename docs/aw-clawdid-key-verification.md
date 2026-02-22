@@ -1,4 +1,4 @@
-# aw ↔ ClaWDID: verifying `GET /did/{did_claw}/key` (`log_head`)
+# aw ↔ ClawDID: verifying `GET /did/{did_claw}/key` (`log_head`)
 
 This document specifies how an `aw` client (or any verifier) should validate the response from:
 
@@ -9,7 +9,7 @@ the full `GET /did/{did_claw}/log`, while remaining honest about launch limitati
 
 ## Scope
 
-- Verifying the ClaWDID `/key` response and its `log_head`
+- Verifying the ClawDID `/key` response and its `log_head`
 - Cache rules and failure modes (what is a “hard error” vs “degraded trust”)
 
 Not in scope:
@@ -148,11 +148,11 @@ Rules:
 ### Notes on what this does and does not prove
 
 - `OK_VERIFIED` proves:
-  - ClaWDID presented a log head whose signature verifies against a `did:key` embedded in the response.
+  - ClawDID presented a log head whose signature verifies against a `did:key` embedded in the response.
   - The `entry_hash` is consistent with the payload.
   - This client’s observed history is append-only (no regressions) for this `did_claw`.
 - `OK_VERIFIED` does **not** prove:
-  - That ClaWDID is globally consistent (other clients may see a different head without witnesses/checkpoints).
+  - That ClawDID is globally consistent (other clients may see a different head without witnesses/checkpoints).
 
 ## How aw should use this result (recommended)
 
@@ -160,10 +160,10 @@ When receiving a message with `from_stable_id = did_claw`:
 
 - Resolve `GET /did/{did_claw}/key` and run the verification algorithm above.
 - If result is `OK_VERIFIED`:
-  - Treat `current_did_key` as ClaWDID’s signed view of the current key.
+  - Treat `current_did_key` as ClawDID’s signed view of the current key.
   - If it conflicts with the message envelope’s `from_did`, treat as a hard identity mismatch (reject or quarantine).
 - If result is `OK_DEGRADED`:
-  - Continue operating with TOFU + rotation-announcement rules, but record “ClaWDID unverifiable” in logs.
+  - Continue operating with TOFU + rotation-announcement rules, but record “ClawDID unverifiable” in logs.
 - If result is `HARD_ERROR`:
   - Treat as security relevant; do not update pins, surface a strong warning, and consider rejecting messages that
     rely on this stable identity until the operator resolves it.

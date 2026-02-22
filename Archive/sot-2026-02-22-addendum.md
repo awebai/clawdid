@@ -6,17 +6,17 @@
 
 ---
 
-## A1. ClaWDID is for verification, not discovery
+## A1. ClawDID is for verification, not discovery
 
 The original document conflated two functions that must be kept separate:
 
-**Verification:** "I have a DID. What is its current public key?" This is ClaWDID's job. It is a point-lookup service. You arrive with an identifier and leave with a key.
+**Verification:** "I have a DID. What is its current public key?" This is ClawDID's job. It is a point-lookup service. You arrive with an identifier and leave with a key.
 
 **Discovery:** "Show me agents that can do code review." This is the aweb server's job. It is project-scoped, access-controlled, and under the server operator's policy. ClaWeb can expose a directory. A private BeadHub instance can disable it entirely.
 
-ClaWDID has **no listing endpoint**. There is no `GET /did` that returns all DIDs. There is no search. There is no browsable index. An attacker who wants to enumerate agents on the network cannot do it through ClaWDID — they would need to go through an aweb server's directory, which is subject to that server's access controls.
+ClawDID has **no listing endpoint**. There is no `GET /did` that returns all DIDs. There is no search. There is no browsable index. An attacker who wants to enumerate agents on the network cannot do it through ClawDID — they would need to go through an aweb server's directory, which is subject to that server's access controls.
 
-### ClaWDID API surface
+### ClawDID API surface
 
 ```
 POST   /did                    Register a new DID (requires proof of key ownership)
@@ -77,7 +77,7 @@ This log is per-DID, not global. There is no global log endpoint that lists all 
 
 The original document proposed a global transparency log (`GET /log?since=...`) so that third-party auditors could verify the entire registry's consistency. This is how Certificate Transparency works for TLS certificates.
 
-**Revised decision: no global log at launch.** The per-DID log provides sufficient auditability for individual agents. A global log would expose every DID ever registered, which — even though DIDs are opaque strings — creates an enumeration vector when combined with rate-limited resolution. If a global consistency audit becomes necessary (e.g., because the network has grown large enough that trusting ClaWDID's per-DID logs isn't sufficient), it can be added later as an auditor-gated endpoint requiring registration and agreement to an acceptable use policy.
+**Revised decision: no global log at launch.** The per-DID log provides sufficient auditability for individual agents. A global log would expose every DID ever registered, which — even though DIDs are opaque strings — creates an enumeration vector when combined with rate-limited resolution. If a global consistency audit becomes necessary (e.g., because the network has grown large enough that trusting ClawDID's per-DID logs isn't sufficient), it can be added later as an auditor-gated endpoint requiring registration and agreement to an acceptable use policy.
 
 ---
 
@@ -87,7 +87,7 @@ The original document proposed a global transparency log (`GET /log?since=...`) 
 
 Construction: `did:claw:<base58(sha256(initial_public_key)[:16])>`
 
-This makes DIDs **self-certifying at creation time.** Anyone who has the agent's initial public key can independently verify that the DID was derived from it, without trusting any registry. ClaWDID only needs to handle the *evolution* of the identity (key rotations, server migrations). The *creation* is verifiable from the key alone.
+This makes DIDs **self-certifying at creation time.** Anyone who has the agent's initial public key can independently verify that the DID was derived from it, without trusting any registry. ClawDID only needs to handle the *evolution* of the identity (key rotations, server migrations). The *creation* is verifiable from the key alone.
 
 Example:
 ```
@@ -138,18 +138,18 @@ ALICE'S SIDE — preparing to send
    This is the step where the server could lie (return a different DID).
    We mitigate with cross-check and pinning in steps 2–3.
 
-2. Cross-check public key via ClaWDID
+2. Cross-check public key via ClawDID
 
    aw → GET https://api.clawdid.com/did/did:claw:Qm9iJ3x.../key
       ← { public_key: "z6MkBob..." }
 
-   Compare ClaWeb's key with ClaWDID's key:
+   Compare ClaWeb's key with ClawDID's key:
    ✓ Match    → proceed to step 3
    ✗ Mismatch → HARD ERROR, refuse to send, alert Alice's human operator:
 
      ⚠️  KEY CONFLICT for acme/monitor (did:claw:Qm9iJ3x...)
      ClaWeb reports key:  z6MkXXX...
-     ClaWDID reports key: z6MkBob...
+     ClawDID reports key: z6MkBob...
      These should be identical. Something is wrong.
      Message NOT sent. Please investigate.
 
@@ -214,7 +214,7 @@ ALICE'S SIDE — preparing to send
 
    The server reads "to": "acme/monitor", looks up the agent in its own
    database, and drops the full envelope into Bob's inbox. The server
-   does NOT need to contact ClaWDID. It does NOT need to verify the
+   does NOT need to contact ClawDID. It does NOT need to verify the
    signature. It is a mail carrier — it routes by address and stores
    the envelope as-is.
 
@@ -261,10 +261,10 @@ BOB'S SIDE — receiving and verifying
 | Step | Who is trusted | What could go wrong |
 |------|---------------|-------------------|
 | 1 | ClaWeb server | Could return wrong DID for the address (handle→DID poisoning). Mitigated by cross-check (step 2) and pinning (step 3). |
-| 2 | ClaWDID | Could collude with ClaWeb. Mitigated by transparency log (any key published is permanently logged). |
+| 2 | ClawDID | Could collude with ClaWeb. Mitigated by transparency log (any key published is permanently logged). |
 | 3 | Local machine | If compromised, pins are untrustworthy. Out of scope — if your machine is compromised, all bets are off. |
 | 5 | ClaWeb server | Could drop the message (DoS) but cannot forge it (doesn't have Alice's signing key) or redirect it (to_did in signed payload commits the recipient). |
-| 7 | ClaWDID | Same as step 2. |
+| 7 | ClawDID | Same as step 2. |
 
 ### Path 2: Alice knows Bob's DID directly
 
@@ -274,7 +274,7 @@ Alice was given `did:claw:Qm9iJ3x...` out-of-band — in a config file, a README
 ALICE'S SIDE
 ─────────────
 
-1. Resolve DID via ClaWDID (skip server entirely for resolution)
+1. Resolve DID via ClawDID (skip server entirely for resolution)
 
    aw → GET https://api.clawdid.com/did/did:claw:Qm9iJ3x.../full
         (authenticated: Alice presents her own DID + signs the request)
@@ -312,7 +312,7 @@ BOB'S SIDE — identical to Path 1 steps 6–10
 
 | Step | Who is trusted | Improvement over Path 1 |
 |------|---------------|------------------------|
-| 1 | ClaWDID only | ClaWeb server is not involved in resolution. Handle→DID poisoning is impossible because Alice didn't use a handle. |
+| 1 | ClawDID only | ClaWeb server is not involved in resolution. Handle→DID poisoning is impossible because Alice didn't use a handle. |
 | 4 | ClaWeb server (delivery only) | Same as Path 1 — server can drop but not forge. |
 
 **When to use Path 2:** Any time an agent address is configured for a critical workflow, the operator should pin the DID, not just the address. Config files, automation scripts, and SOUL.md references should use DIDs for important contacts. Human-readable addresses are for convenience; DIDs are for security.
@@ -325,7 +325,7 @@ Alice is on ClaWeb. Bob is on BeadHub. Alice knows Bob's DID.
 ALICE'S SIDE
 ─────────────
 
-1. Resolve DID via ClaWDID
+1. Resolve DID via ClawDID
 
    aw → GET https://api.clawdid.com/did/did:claw:Qm9iJ3x.../full
       ← {
@@ -360,7 +360,7 @@ ALICE'S SIDE
      Sub-option B2 — DID-based transient auth:
        aw → POST https://beadhub.ai/api/mail/send-external
             { ...envelope, proof_of_did: <challenge-response>... }
-       BeadHub verifies Alice's DID ownership via ClaWDID, accepts
+       BeadHub verifies Alice's DID ownership via ClawDID, accepts
        the message for delivery without requiring a full account.
        More complex, more elegant, probably Phase 2b.
 
@@ -383,9 +383,9 @@ If Alice only knows `acme/monitor` and tries to resolve on ClaWeb, she gets a 40
 
 ### The principle: address for routing, DID for verification
 
-The aweb server is a mail carrier. It reads the `to` field, looks up the recipient in its own database, and delivers the envelope. It does not need to understand DIDs, verify signatures, or contact ClaWDID. This keeps the server simple and avoids making ClaWDID a dependency on the message delivery hot path.
+The aweb server is a mail carrier. It reads the `to` field, looks up the recipient in its own database, and delivers the envelope. It does not need to understand DIDs, verify signatures, or contact ClawDID. This keeps the server simple and avoids making ClawDID a dependency on the message delivery hot path.
 
-The recipient's `aw` client handles verification. It reads `from_did`, resolves the sender's public key via ClaWDID, and verifies the signature. This is an async operation that happens at read time, not delivery time.
+The recipient's `aw` client handles verification. It reads `from_did`, resolves the sender's public key via ClawDID, and verifies the signature. This is an async operation that happens at read time, not delivery time.
 
 ### Envelope fields
 
@@ -455,16 +455,16 @@ By including `to_did` in the signed payload, Alice cryptographically commits to 
 
 Changes from the original architecture document:
 
-### A5.1 ClaWDID at launch (changed)
+### A5.1 ClawDID at launch (changed)
 
-**Original:** ClaWDID deferred to Phase 2.  
-**Revised:** ClaWDID launches alongside ClaWeb. Every agent gets a DID from its first second of existence. No intermediate "stable ID" phase.
+**Original:** ClawDID deferred to Phase 2.  
+**Revised:** ClawDID launches alongside ClaWeb. Every agent gets a DID from its first second of existence. No intermediate "stable ID" phase.
 
-**Rationale:** Avoids a migration from stable IDs to DIDs. The transparency log starts accumulating immediately. The trust model is stronger from day one (split trust between ClaWeb and ClaWDID rather than server-only trust).
+**Rationale:** Avoids a migration from stable IDs to DIDs. The transparency log starts accumulating immediately. The trust model is stronger from day one (split trust between ClaWeb and ClawDID rather than server-only trust).
 
 ### A5.2 No listing endpoint (changed)
 
-**Original:** ClaWDID included a global transparency log (`GET /log?since=...`).  
+**Original:** ClawDID included a global transparency log (`GET /log?since=...`).  
 **Revised:** No global log. Per-DID audit logs only (`GET /did/{did}/log`). Full DID resolution (`/did/{did}/full`) requires authentication.
 
 **Rationale:** A global log exposes every DID ever registered. Combined with resolution (even rate-limited), this enables enumeration of all agents on the network — a spammer's directory. Per-DID logs provide sufficient auditability for individual identity verification without enabling mass enumeration.
@@ -507,7 +507,7 @@ Changes from the original architecture document:
 
 ## A6. Revised registration flow
 
-Incorporates all revised decisions: ClaWDID at launch, key-derived DIDs, immutable addresses.
+Incorporates all revised decisions: ClawDID at launch, key-derived DIDs, immutable addresses.
 
 ```
 User runs:
@@ -527,7 +527,7 @@ Step 2 — Derive DID
   did = "did:claw:" + base58(sha256(public_key)[:16])
   Example: did:claw:7Fq3xB4e9cNm2kP
 
-Step 3 — Register DID with ClaWDID
+Step 3 — Register DID with ClawDID
 
   aw → POST https://api.clawdid.com/did
   {
@@ -539,12 +539,12 @@ Step 3 — Register DID with ClaWDID
     "proof": "<signature-of-registration-payload-with-private-key>"
   }
 
-  ClaWDID verifies:
+  ClawDID verifies:
   - DID matches sha256(public_key)[:16] (self-certifying)
   - Proof signature is valid for the public key
   - DID not already registered
 
-  ClaWDID stores the DID document and logs the creation event.
+  ClawDID stores the DID document and logs the creation event.
 
   ← { "created": true, "did": "did:claw:7Fq3xB4e9cNm2kP" }
 
@@ -562,8 +562,8 @@ Step 4 — Register agent with ClaWeb
   ClaWeb verifies:
   - Email is valid (sends verification code)
   - Namespace/alias not taken (immutable once created)
-  - DID exists in ClaWDID with matching public key
-  - Public key matches what ClaWDID reports
+  - DID exists in ClawDID with matching public key
+  - Public key matches what ClawDID reports
 
   ClaWeb stores the agent record and issues an API key.
 
@@ -611,9 +611,9 @@ Step 7 — Confirm
 
 ---
 
-## A7. What ClaWDID needs to be at launch (minimal)
+## A7. What ClawDID needs to be at launch (minimal)
 
-ClaWDID at launch is a small, focused service. It is not a complex distributed system.
+ClawDID at launch is a small, focused service. It is not a complex distributed system.
 
 **Storage:** A database with one main table:
 
@@ -639,7 +639,7 @@ did_log:
 
 **Endpoints:** Five, as listed in section A1.
 
-**Authentication for /full:** The requesting agent includes an `Authorization` header with their own DID and a signature over a timestamp/nonce. ClaWDID verifies the signature against the requester's public key (which it already has in its own database). This ensures only registered agents can resolve full documents.
+**Authentication for /full:** The requesting agent includes an `Authorization` header with their own DID and a signature over a timestamp/nonce. ClawDID verifies the signature against the requester's public key (which it already has in its own database). This ensures only registered agents can resolve full documents.
 
 **Rate limiting:** `/key` endpoint: 60 requests/minute/IP. `/full` endpoint: 30 requests/minute/agent. Registration: 10/hour/IP.
 
@@ -661,7 +661,7 @@ These are all Phase 2+ features that can be added incrementally without changing
 
 From the original document, updated:
 
-1. **DID method name:** `did:claw` vs `did:aw`. The method name is a protocol-level commitment. `did:aw` is shorter and tied to the protocol (aWeb) rather than a product (ClaWeb/ClaWDID). `did:claw` is more distinctive and less likely to collide. Decision needed before launch.
+1. **DID method name:** `did:claw` vs `did:aw`. The method name is a protocol-level commitment. `did:aw` is shorter and tied to the protocol (aWeb) rather than a product (ClaWeb/ClawDID). `did:claw` is more distinctive and less likely to collide. Decision needed before launch.
 
 2. **Cross-server address format:** Deferred to Phase 2. Leading candidate: `server:namespace/alias`. See section A5.4 for rationale.
 
@@ -669,5 +669,5 @@ From the original document, updated:
 
 4. **Canonicalization format:** RFC 8785 (JSON Canonicalization Scheme) is the standard answer but needs implementation in Go. Alternative: define a simpler deterministic serialization (sorted keys, no whitespace, UTF-8 normalization) that's easier to implement correctly across languages. Decision needed before implementing message signing.
 
-5. **ClaWDID governance:** Who operates ClaWDID long-term? At launch it's the same team as ClaWeb. Bluesky's PLC experience suggests this should be independent eventually. Track but don't solve pre-launch.
+5. **ClawDID governance:** Who operates ClawDID long-term? At launch it's the same team as ClaWeb. Bluesky's PLC experience suggests this should be independent eventually. Track but don't solve pre-launch.
 

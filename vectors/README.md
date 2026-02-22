@@ -1,6 +1,6 @@
 # Protocol conformance vectors
 
-This directory publishes **deterministic conformance vectors** for the aWeb identity and ClaWDID
+This directory publishes **deterministic conformance vectors** for the aWeb identity and ClawDID
 protocol rules defined in `sot.md` and `sot-2026-02-22-addendum-v2.md`.
 
 These vectors exist to prevent subtle cross-language drift (Python ↔ Go) in:
@@ -8,7 +8,7 @@ These vectors exist to prevent subtle cross-language drift (Python ↔ Go) in:
 - Signature base64 encoding
 - `did:key` ↔ public key parsing
 - Stable ID derivation (`did:claw:` / `did:aw:`)
-- ClaWDID audit-log entry hashing + signing
+- ClawDID audit-log entry hashing + signing
 
 ## Files
 
@@ -18,7 +18,7 @@ These vectors exist to prevent subtle cross-language drift (Python ↔ Go) in:
   - Includes variants with and without stable ID fields
 
 - `clawdid-log-v1.json`
-  - Canonical ClaWDID log entry payload
+  - Canonical ClawDID log entry payload
   - Expected `entry_hash` (sha256 hex)
   - Expected Ed25519 signature (standard base64, **no padding**)
 

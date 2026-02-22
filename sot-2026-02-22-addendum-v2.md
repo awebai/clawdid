@@ -21,7 +21,7 @@ The revised model keeps `did:key` as the foundation and adds `did:claw` as an op
 ├──────────────────────────────────────────────────────────────┤
 │                  STABLE IDENTITY (optional)                   │
 │                did:claw:7Fq3xB...                            │
-│     Never changes. Maps to current did:key via ClaWDID.      │
+│     Never changes. Maps to current did:key via ClawDID.      │
 │     Absent for ephemeral agents.                             │
 ├──────────────────────────────────────────────────────────────┤
 │                 CRYPTOGRAPHIC IDENTITY                        │
@@ -43,31 +43,31 @@ The revised model keeps `did:key` as the foundation and adds `did:claw` as an op
 
 **`did:claw` (stability layer — new, optional, additive):**
 - An optional stable identifier that never changes across key rotations.
-- A pointer, not a key. It maps to the current `did:key` via ClaWDID.
+- A pointer, not a key. It maps to the current `did:key` via ClawDID.
 - Provides identity continuity: when Alice rotates her key, her `did:key` changes but her `did:claw` stays the same. Contacts, pins, and history that reference her `did:claw` remain valid.
-- Absent for ephemeral agents, session-scoped agents, or any agent that doesn't need stable identity. These agents use `did:key` only and never touch ClaWDID.
+- Absent for ephemeral agents, session-scoped agents, or any agent that doesn't need stable identity. These agents use `did:key` only and never touch ClawDID.
 
 ### Why two layers, not one
 
-The original addendum tried to make `did:claw` do everything: be the stable identifier AND the verification key source. This created a hard dependency on ClaWDID for every signature verification. If ClaWDID was down, verification broke entirely.
+The original addendum tried to make `did:claw` do everything: be the stable identifier AND the verification key source. This created a hard dependency on ClawDID for every signature verification. If ClawDID was down, verification broke entirely.
 
-The two-layer model keeps verification independent of any external service. ClaWDID is additive trust, not required trust:
+The two-layer model keeps verification independent of any external service. ClawDID is additive trust, not required trust:
 
 | Scenario | did:key (base) | did:claw (stability) |
 |----------|---------------|---------------------|
 | Verify a signature | ✅ Extract key from did:key, verify locally | Not involved |
-| Confirm stable identity | Not sufficient (key changes on rotation) | ✅ Resolve did:claw → did:key via ClaWDID |
-| ClaWDID is down | ✅ Signature verification still works | ⚠️ Stable identity cross-check unavailable (degraded, not broken) |
+| Confirm stable identity | Not sufficient (key changes on rotation) | ✅ Resolve did:claw → did:key via ClawDID |
+| ClawDID is down | ✅ Signature verification still works | ⚠️ Stable identity cross-check unavailable (degraded, not broken) |
 | Ephemeral agent | ✅ Full functionality | Not needed, not registered |
-| Key rotation | did:key changes, TOFU warns | did:claw unchanged, ClaWDID records new mapping |
+| Key rotation | did:key changes, TOFU warns | did:claw unchanged, ClawDID records new mapping |
 
 ---
 
-## A2. ClaWDID is a mapping service
+## A2. ClawDID is a mapping service
 
-### What ClaWDID stores
+### What ClawDID stores
 
-ClaWDID's core job is simple: it maps stable identifiers to current cryptographic identities.
+ClawDID's core job is simple: it maps stable identifiers to current cryptographic identities.
 
 ```
 did:claw:7Fq3xB...  →  did:key:z6MkAlice...     (current, since 2026-03-15)
@@ -157,11 +157,11 @@ Rules:
 - `entry_hash = sha256(entry_payload_bytes)` (hex encoded).
 - `signature` is Ed25519 over `entry_payload_bytes`, verified offline against `authorized_by` (a `did:key`).
 
-### ClaWDID is for verification, not discovery
+### ClawDID is for verification, not discovery
 
-This principle is unchanged from v1. ClaWDID has **no listing endpoint.** There is no way to enumerate all registered agents. It is a point-lookup and audit service.
+This principle is unchanged from v1. ClawDID has **no listing endpoint.** There is no way to enumerate all registered agents. It is a point-lookup and audit service.
 
-### ClaWDID API surface
+### ClawDID API surface
 
 ```
 POST   /did                    Register a new did:claw (requires proof of did:key ownership)
@@ -172,7 +172,7 @@ GET    /did/{did_claw}/log     Mutation history for this did:claw (public, for a
 PUT    /did/{did_claw}         Update mapping (key rotation, server migration — requires signing key)
 ```
 
-Compatibility note: ClaWDID serves the same routes under `/v1/did/...` (e.g. `GET /v1/did/{did_claw}/key`)
+Compatibility note: ClawDID serves the same routes under `/v1/did/...` (e.g. `GET /v1/did/{did_claw}/key`)
 for clients that standardize on aweb-style versioned routing.
 
 **`GET /did/{did_claw}/key`** — the workhorse. Called when an agent wants to cross-check a stable identity against a `did:key`. Public, rate-limited.
@@ -243,7 +243,7 @@ This does leak minimal metadata (e.g. the latest `seq` and `timestamp`) to anyon
 
 There is no global log endpoint. Per-DID logs provide sufficient auditability without enabling mass enumeration.
 
-**Security note (normative):** At launch, ClaWDID provides a *self-verifying per-identity* log (hash chain + signed entries), but it is **not yet** a full transparency system. In particular, without an external witnessing/checkpoint mechanism, ClaWDID can theoretically equivocate (serve different log heads to different verifiers). This limitation must be documented honestly in user-facing materials. A transparency/witness roadmap is included in this repo.
+**Security note (normative):** At launch, ClawDID provides a *self-verifying per-identity* log (hash chain + signed entries), but it is **not yet** a full transparency system. In particular, without an external witnessing/checkpoint mechanism, ClawDID can theoretically equivocate (serve different log heads to different verifiers). This limitation must be documented honestly in user-facing materials. A transparency/witness roadmap is included in this repo.
 
 ---
 
@@ -270,9 +270,9 @@ Base58 encode:           Qm9iJ3xK7fR2vWn4pT
 did:claw:                did:claw:Qm9iJ3xK7fR2vWn4pT
 ```
 
-**Self-certifying property:** Anyone who knows the initial `did:key` can extract the public key bytes and verify that the `did:claw` was derived from them. This is checked at registration time by ClaWDID and can be verified by anyone who has both values.
+**Self-certifying property:** Anyone who knows the initial `did:key` can extract the public key bytes and verify that the `did:claw` was derived from them. This is checked at registration time by ClawDID and can be verified by anyone who has both values.
 
-**Immutability:** The `did:claw` never changes. When the agent rotates keys, the `did:key` changes but the `did:claw` remains the same. ClaWDID records the new `did:claw` → `did:key` mapping.
+**Immutability:** The `did:claw` never changes. When the agent rotates keys, the `did:key` changes but the `did:claw` remains the same. ClawDID records the new `did:claw` → `did:key` mapping.
 
 **Not required:** Agents that don't need stable identity (ephemeral, session-scoped, custodial) simply don't register a `did:claw`. They operate with `did:key` alone. All existing aweb functionality works without `did:claw`.
 
@@ -307,7 +307,7 @@ The `from_did` and `to_did` fields already exist in the aweb protocol and mean "
 |-------|---------|----------|---------|
 | `from` | Sender's address (namespace/alias) | Yes | Server (logging), recipient (display) |
 | `from_did` | Sender's `did:key` — verification key | Yes | Recipient: extract public key, verify signature |
-| `from_stable_id` | Sender's `did:claw` — stable identity | No | Recipient: cross-check identity continuity via ClaWDID |
+| `from_stable_id` | Sender's `did:claw` — stable identity | No | Recipient: cross-check identity continuity via ClawDID |
 | `to` | Recipient's address | Yes | Server: route to inbox |
 | `to_did` | Recipient's `did:key` | Yes | Recipient: confirm message was intended for them |
 | `to_stable_id` | Recipient's `did:claw` | No | Recipient: confirm stable identity match |
@@ -325,7 +325,7 @@ When stable IDs are present:
 {"body":"task complete","from":"mycompany/researcher","from_did":"did:key:z6MkAlice...","from_stable_id":"did:claw:7Fq3xB...","message_id":"8b1c2c69-7c2a-4fbb-9f4a-3dfb7d7a26c0","subject":"status update","timestamp":"2026-02-22T10:00:00Z","to":"acme/monitor","to_did":"did:key:z6MkBob...","to_stable_id":"did:claw:Qm9iJ3x...","type":"mail"}
 ```
 
-When stable IDs are absent (ephemeral agent, no ClaWDID registration):
+When stable IDs are absent (ephemeral agent, no ClawDID registration):
 ```json
 {"body":"task complete","from":"mycompany/researcher","from_did":"did:key:z6MkAlice...","message_id":"8b1c2c69-7c2a-4fbb-9f4a-3dfb7d7a26c0","subject":"status update","timestamp":"2026-02-22T10:00:00Z","to":"acme/monitor","to_did":"did:key:z6MkBob...","type":"mail"}
 ```
@@ -383,20 +383,20 @@ ALICE'S SIDE — preparing to send
    identity tracking). The server is the source of this information — it
    could lie. We mitigate in steps 2–3.
 
-2. Cross-check via ClaWDID (if Bob has a did:claw)
+2. Cross-check via ClawDID (if Bob has a did:claw)
 
    If stable_id is present:
 
    aw → GET https://api.clawdid.com/did/did:claw:Qm9iJ3x.../key
       ← { current_did_key: "did:key:z6MkBob..." }
 
-   Compare: does ClaWeb's did:key match ClaWDID's mapping?
+   Compare: does ClaWeb's did:key match ClawDID's mapping?
    ✓ Match    → the server is honest about Bob's current key
    ✗ Mismatch → HARD ERROR:
 
      ⚠️  KEY CONFLICT for acme/monitor
      ClaWeb reports did:key:   z6MkXXX...
-     ClaWDID maps did:claw to: z6MkBob...
+     ClawDID maps did:claw to: z6MkBob...
      These should be identical. Message NOT sent.
 
    If stable_id is null (Bob has no did:claw):
@@ -423,9 +423,9 @@ ALICE'S SIDE — preparing to send
    A — First contact: store new pin. Proceed.
    B — Known, key matches: proceed.
    C — Known by did:claw, did:key changed:
-       Check ClaWDID: did the mapping change legitimately?
-       If ClaWDID confirms rotation → update pin, proceed.
-       If ClaWDID still shows old key → WARN, possible compromise.
+       Check ClawDID: did the mapping change legitimately?
+       If ClawDID confirms rotation → update pin, proceed.
+       If ClawDID still shows old key → WARN, possible compromise.
    D — Known by did:key only, did:key changed:
        SSH-style warning. No way to distinguish rotation from compromise
        without did:claw. This is the weaker trust model for agents
@@ -456,7 +456,7 @@ ALICE'S SIDE — preparing to send
         { ...envelope with signature... }
 
    Server reads "to": "acme/monitor", delivers to Bob's inbox.
-   Server does NOT contact ClaWDID. It does NOT verify the signature.
+   Server does NOT contact ClawDID. It does NOT verify the signature.
    It is a mail carrier.
 
 
@@ -491,8 +491,8 @@ BOB'S SIDE — receiving and verifying
    ✗ Mismatch → WARN: the did:claw doesn't map to this key. Either the
                  mapping is stale (race during rotation) or something is wrong.
 
-   If ClaWDID is unreachable:
-   Log a note ("stable identity cross-check skipped — ClaWDID unavailable").
+   If ClawDID is unreachable:
+   Log a note ("stable identity cross-check skipped — ClawDID unavailable").
    Signature verification (step 7) already passed. Proceed with degraded trust.
 
 9. Verify recipient did
@@ -512,10 +512,10 @@ BOB'S SIDE — receiving and verifying
 
 | Step | Who is trusted | What if they lie | Mitigation |
 |------|---------------|-----------------|------------|
-| 1. Resolve address | ClaWeb server | Could return wrong did:key | Cross-check via ClaWDID (step 2) + pinning (step 3) |
-| 2. Cross-check | ClaWDID | Could collude with server | Transparency log (rotation history is public per-DID) |
+| 1. Resolve address | ClaWeb server | Could return wrong did:key | Cross-check via ClawDID (step 2) + pinning (step 3) |
+| 2. Cross-check | ClawDID | Could collude with server | Transparency log (rotation history is public per-DID) |
 | 7. Verify signature | Nobody — offline | N/A | did:key is self-verifying |
-| 8. Cross-check stable ID | ClaWDID | Could lie about mapping | Transparency log + local pins |
+| 8. Cross-check stable ID | ClawDID | Could lie about mapping | Transparency log + local pins |
 
 The critical property: **step 7 trusts nobody.** Signature verification is fully offline. Steps 2 and 8 add identity continuity but are not required for basic authenticity.
 
@@ -527,7 +527,7 @@ Alice was given Bob's `did:claw:Qm9iJ3x...` out-of-band (config file, README, an
 ALICE'S SIDE
 ─────────────
 
-1. Resolve did:claw via ClaWDID
+1. Resolve did:claw via ClawDID
 
    aw → GET https://api.clawdid.com/did/did:claw:Qm9iJ3x.../full
         (authenticated request)
@@ -543,12 +543,12 @@ ALICE'S SIDE
 
 2. Check local pins
 3. Construct and sign message (using address and did:key from step 1)
-4. Deliver to server indicated by ClaWDID
+4. Deliver to server indicated by ClawDID
 
 BOB'S SIDE — identical to Path 1, steps 6–11
 ```
 
-**Why this is more secure than Path 1:** The handle→identity resolution (the weakest step) bypasses the aweb server entirely. Alice goes straight to ClaWDID for the `did:key`, then sends to the server only for delivery. The server is just a mail carrier — it can drop messages but can't influence identity resolution.
+**Why this is more secure than Path 1:** The handle→identity resolution (the weakest step) bypasses the aweb server entirely. Alice goes straight to ClawDID for the `did:key`, then sends to the server only for delivery. The server is just a mail carrier — it can drop messages but can't influence identity resolution.
 
 ### Path 3: Alice knows Bob's did:key directly
 
@@ -563,7 +563,7 @@ ALICE'S SIDE
    But Alice needs Bob's server and address for delivery.
    Options:
    a) Alice also knows the address and server (fully out-of-band). Done.
-   b) Alice has Bob's did:claw and resolves via ClaWDID for server/address.
+   b) Alice has Bob's did:claw and resolves via ClawDID for server/address.
    c) Alice resolves the did:key via her aweb server's directory.
 
 2. Construct and sign message
@@ -579,7 +579,7 @@ BOB'S SIDE — step 7 (signature verification) is maximally secure:
 Alice is on ClaWeb. Bob is on BeadHub. Alice knows Bob's `did:claw`.
 
 ```
-1. Alice resolves did:claw via ClaWDID
+1. Alice resolves did:claw via ClawDID
    → gets did:key, server: "https://beadhub.ai", address: "acme/monitor"
 
 2. Alice constructs and signs message (same as any other path)
@@ -600,7 +600,7 @@ Alice is on ClaWeb. Bob is on BeadHub. Alice knows Bob's `did:claw`.
      BeadHub verifies Alice's did:key, accepts message without full account.
 
 4. Bob receives on BeadHub, verifies signature offline using did:key.
-   Cross-checks did:claw via ClaWDID if desired.
+   Cross-checks did:claw via ClawDID if desired.
 ```
 
 ### Path 5: Ephemeral agents (no did:claw)
@@ -609,7 +609,7 @@ A BeadHub session-scoped coding agent that lives for one task.
 
 ```
 Registration:
-  Agent gets a did:key. No did:claw registration. No ClaWDID involvement.
+  Agent gets a did:key. No did:claw registration. No ClawDID involvement.
 
 Messages:
   {
@@ -650,7 +650,7 @@ This is the current model. It works. It's correct. It's the same security model 
 
 The aweb server mitigates bare TOFU warnings via **rotation announcements** (see main SOT §5.4). When an agent rotates its key, the server attaches a signed announcement to outgoing messages — a proof that the old key authorized the transition to the new key. This lets the receiver auto-accept the rotation without an interactive prompt. Announcements are delivered per-peer until the peer responds or 24 hours elapse, whichever comes first.
 
-For agents with `did:claw`, the preferred continuity check is the ClaWDID audit trail (stable ID → current key). Rotation announcements remain a useful fallback when ClaWDID is unreachable or when the receiver has not yet observed/pinned the sender’s stable ID.
+For agents with `did:claw`, the preferred continuity check is the ClawDID audit trail (stable ID → current key). Rotation announcements remain a useful fallback when ClawDID is unreachable or when the receiver has not yet observed/pinned the sender’s stable ID.
 
 ### With did:claw
 
@@ -661,7 +661,7 @@ New did:key: did:key:z6MkNewAlice...
 did:claw:    did:claw:7Fq3xB...          ← unchanged
 
 1. Alice generates new keypair locally
-2. Alice updates ClaWDID:
+2. Alice updates ClawDID:
    PUT https://api.clawdid.com/did/did:claw:7Fq3xB...
    {
      new_did_key: "did:key:z6MkNewAlice...",
@@ -672,18 +672,18 @@ did:claw:    did:claw:7Fq3xB...          ← unchanged
      timestamp: "2026-06-01T12:00:00Z",
      signature: <old key signs the rotation>
    }
-3. ClaWDID verifies the signature, updates the mapping, logs the event.
+3. ClawDID verifies the signature, updates the mapping, logs the event.
 4. Alice updates her aweb server with the new did:key.
 
 When Bob next communicates with Alice:
 - Bob's aw resolves did:claw:7Fq3xB... → gets new did:key
 - Bob's pin is keyed by did:claw, sees did:key changed
-- Bob's aw checks ClaWDID log for did:claw:7Fq3xB...: legitimate rotation logged
+- Bob's aw checks ClawDID log for did:claw:7Fq3xB...: legitimate rotation logged
 - No TOFU warning. Smooth transition.
 - Bob verifies Alice's next message against the new did:key.
 ```
 
-The rotation is **authorized by the old key** (it signs the rotation request). ClaWDID logs it. Any auditor can verify the chain: initial key → rotation signed by initial key → new key. This is the "chained rotation" problem that becomes trivial with the two-layer model — the `did:claw` provides the stable reference point, and the log provides the chain of custody.
+The rotation is **authorized by the old key** (it signs the rotation request). ClawDID logs it. Any auditor can verify the chain: initial key → rotation signed by initial key → new key. This is the "chained rotation" problem that becomes trivial with the two-layer model — the `did:claw` provides the stable reference point, and the log provides the chain of custody.
 
 ---
 
@@ -718,9 +718,9 @@ If agent has a did:claw (from_stable_id present):
   If did:key changed:
     → Fetch `GET /did/{did_claw}/key`
     → Verify `log_head.signature` offline against `log_head.authorized_by` (a did:key)
-    → If ClaWDID current key == message key and log head verifies: update pin silently
-    → If ClaWDID still maps to old key: WARN + reject (possible compromise)
-    → If ClaWDID unreachable: WARN with note about degraded verification
+    → If ClawDID current key == message key and log head verifies: update pin silently
+    → If ClawDID still maps to old key: WARN + reject (possible compromise)
+    → If ClawDID unreachable: WARN with note about degraded verification
 
 If agent has no did:claw (from_stable_id absent):
   Key the pin by did:key
@@ -731,23 +731,23 @@ If agent has no did:claw (from_stable_id absent):
 
 ### Warning messages
 
-**did:claw agent, key rotated, ClaWDID confirms:**
+**did:claw agent, key rotated, ClawDID confirms:**
 ```
 ℹ️  Key rotated for acme/monitor (did:claw:Qm9iJ3x...)
    Previous: did:key:z6MkOld...
    Current:  did:key:z6MkNew...
-   Rotation verified via ClaWDID audit log head.
+   Rotation verified via ClawDID audit log head.
    Pin updated.
 ```
 No human action required.
 
-**did:claw agent, key changed, ClaWDID does NOT confirm:**
+**did:claw agent, key changed, ClawDID does NOT confirm:**
 ```
 ⚠️  UNVERIFIED KEY CHANGE for acme/monitor (did:claw:Qm9iJ3x...)
    Previous: did:key:z6MkOld...
    Message:  did:key:z6MkSuspicious...
-   ClaWDID still maps to: did:key:z6MkOld...
-   This key change is NOT recorded in the ClaWDID audit log.
+   ClawDID still maps to: did:key:z6MkOld...
+   This key change is NOT recorded in the ClawDID audit log.
    The message may be forged. Rejecting.
 ```
 
@@ -776,7 +776,7 @@ Step 1 — Generate keypair locally
   did:key derived from public key (existing code, unchanged).
   Private key → ~/.config/aw/keys/signing.key
 
-Step 2 — Register did:claw with ClaWDID (optional, on by default for ClaWeb)
+Step 2 — Register did:claw with ClawDID (optional, on by default for ClaWeb)
   did:claw = "did:claw:" + base58btc(sha256(initial_public_key_bytes)[:20])
 
   aw → POST https://api.clawdid.com/did
@@ -794,7 +794,7 @@ Step 2 — Register did:claw with ClaWDID (optional, on by default for ClaWeb)
     "proof": <did:key signs the registration payload>
   }
 
-  ClaWDID verifies:
+  ClawDID verifies:
   - did:claw matches sha256(public_key_bytes)[:20] (self-certifying derivation)
   - Proof signature valid for the canonical log entry payload (§A2)
   - did:claw not already registered
@@ -818,7 +818,7 @@ Step 3 — Register agent with aweb server
   ClaWeb verifies:
   - Namespace/alias available (immutable once created)
   - DID/public_key consistent (did:key embeds the public key)
-  - (Future) If stable identity is integrated at the server layer: stable_id exists in ClaWDID with matching did:key
+  - (Future) If stable identity is integrated at the server layer: stable_id exists in ClawDID with matching did:key
 
   ← { "api_key": "aw_sk_aaa..." }
 
@@ -849,7 +849,7 @@ The resolver interface supports both layers. The base `did:key` resolution uses 
 // AgentIdentity — everything known about a resolved agent.
 type AgentIdentity struct {
     DIDKey      string    // did:key:z6Mk... — always present, used for verification
-    StableID    string    // did:claw:... — may be empty (no ClaWDID registration)
+    StableID    string    // did:claw:... — may be empty (no ClawDID registration)
     Address     string    // mycompany/researcher
     ServerURL   string    // https://app.claweb.ai
     ResolvedVia string    // "server", "clawdid", "local-pin"
@@ -868,9 +868,9 @@ Implementations:
 // Resolves namespace/alias → AgentIdentity
 type ServerResolver struct { client *Client }
 
-// ClaWDIDResolver — resolves did:claw → AgentIdentity via ClaWDID.
+// ClawDIDResolver — resolves did:claw → AgentIdentity via ClawDID.
 // New, additive.
-type ClaWDIDResolver struct { registryURL string }
+type ClawDIDResolver struct { registryURL string }
 
 // PinResolver — resolves from local pin store. No network.
 // New, additive.
@@ -879,17 +879,17 @@ type PinResolver struct { pinStore *PinStore }
 // ChainResolver — tries resolvers in order based on identifier format.
 type ChainResolver struct {
     server  *ServerResolver
-    clawdid *ClaWDIDResolver  // may be nil if ClaWDID not configured
+    clawdid *ClawDIDResolver  // may be nil if ClawDID not configured
     pins    *PinResolver
 }
 
 func (r *ChainResolver) Resolve(ctx context.Context, id string) (*AgentIdentity, error) {
     switch {
     case strings.HasPrefix(id, "did:claw:"):
-        // Stable identity: resolve via ClaWDID
+        // Stable identity: resolve via ClawDID
         identity, err := r.clawdid.Resolve(ctx, id)
         if err != nil {
-            // ClaWDID unavailable: fall back to local pin
+            // ClawDID unavailable: fall back to local pin
             return r.pins.Resolve(ctx, id)
         }
         return identity, nil
@@ -907,7 +907,7 @@ func (r *ChainResolver) Resolve(ctx context.Context, id string) (*AgentIdentity,
         if err != nil {
             return nil, err
         }
-        // Cross-check via ClaWDID if stable_id available
+        // Cross-check via ClawDID if stable_id available
         if identity.StableID != "" && r.clawdid != nil {
             r.crossCheck(ctx, identity)
         }
@@ -916,25 +916,25 @@ func (r *ChainResolver) Resolve(ctx context.Context, id string) (*AgentIdentity,
 }
 ```
 
-The key property: **the `ServerResolver` path is completely unchanged from existing code.** The `ClaWDIDResolver` and `PinResolver` are additive. If ClaWDID is not configured (e.g., a standalone BeadHub deployment), the chain resolver simply doesn't have that option and everything works as before.
+The key property: **the `ServerResolver` path is completely unchanged from existing code.** The `ClawDIDResolver` and `PinResolver` are additive. If ClawDID is not configured (e.g., a standalone BeadHub deployment), the chain resolver simply doesn't have that option and everything works as before.
 
 ---
 
-## A10. What ClaWDID needs to be at launch (minimal)
+## A10. What ClawDID needs to be at launch (minimal)
 
-ClaWDID at launch is a small service. It does not need to be complex.
+ClawDID at launch is a small service. It does not need to be complex.
 
 **Storage:** Postgres or SQLite. Two tables (mappings + log) as described in §A2.
 
 **Endpoints:** Six, as described in §A2 (including the lightweight `GET /did/{did_claw}/head`).
 
-**Authentication for `/full`:** Requesting agent includes `Authorization: DIDKey <did:key> <signature>` and an `X-Clawdid-Timestamp` header. ClaWDID extracts the public key from the `did:key` (offline, no lookup needed — `did:key` is self-contained), verifies the signature over the canonical string:
+**Authentication for `/full`:** Requesting agent includes `Authorization: DIDKey <did:key> <signature>` and an `X-ClawDID-Timestamp` header. ClawDID extracts the public key from the `did:key` (offline, no lookup needed — `did:key` is self-contained), verifies the signature over the canonical string:
 
 ```
 <timestamp>\n<HTTP method>\n<request path>
 ```
 
-ClaWDID enforces a short timestamp skew window (e.g., 5 minutes). This confirms the requester controls a real `did:key` without ClaWDID needing any state about them.
+ClawDID enforces a short timestamp skew window (e.g., 5 minutes). This confirms the requester controls a real `did:key` without ClawDID needing any state about them.
 
 **Rate limiting:**
 - `/key`: 60 req/min/IP (public, the workhorse)
@@ -977,19 +977,19 @@ This section explicitly addresses what changes and what doesn't.
 
 | Component | Description |
 |-----------|-------------|
-| `did_claw.py` (or Go equivalent) | Derive did:claw from did:key, register with ClaWDID |
-| ClaWDID client | HTTP client for ClaWDID API (resolve, register, rotate) |
-| ClaWDID cross-check in resolver | After server resolution, optionally cross-check key via ClaWDID |
+| `did_claw.py` (or Go equivalent) | Derive did:claw from did:key, register with ClawDID |
+| ClawDID client | HTTP client for ClawDID API (resolve, register, rotate) |
+| ClawDID cross-check in resolver | After server resolution, optionally cross-check key via ClawDID |
 | `from_stable_id` / `to_stable_id` envelope fields | Optional new fields, absent when no did:claw |
-| TOFU pinning extension | Pin by did:claw when available, did:key otherwise. Rotation verification via ClaWDID log. |
-| ClaWDID service itself | New service (§A10) |
+| TOFU pinning extension | Pin by did:claw when available, did:key otherwise. Rotation verification via ClawDID log. |
+| ClawDID service itself | New service (§A10) |
 
 ### Minor modifications
 
 | Component | Change |
 |-----------|--------|
 | Agent metadata (server DB) | Add nullable `stable_id` column |
-| `aw register` | Add optional ClaWDID registration step (skippable with flag) |
+| `aw register` | Add optional ClawDID registration step (skippable with flag) |
 | `aw introspect` | Display did:claw if registered |
 | Resolve endpoint (server API) | Return `stable_id` in response when present |
 | `signing.py` SIGNED_FIELDS | Expand to include `from_stable_id`, `to_stable_id` (only serialized when present in message) |
@@ -1027,12 +1027,12 @@ Changes from original addendum (v1):
 
 **Rationale:** did:key provides offline verification with zero network calls — a property that no server-resolved DID method can match. The existing implementation (330 tests, did.py, signing.py) is correct and unchanged.
 
-### A12.2 ClaWDID is a mapping service, not a document store (changed from v1)
+### A12.2 ClawDID is a mapping service, not a document store (changed from v1)
 
-**v1:** ClaWDID stores full DID documents (W3C format with verificationMethod, service endpoints, etc.).  
-**v2:** ClaWDID stores mappings: `did:claw` → current `did:key` + server + address. Simpler schema, simpler API.
+**v1:** ClawDID stores full DID documents (W3C format with verificationMethod, service endpoints, etc.).  
+**v2:** ClawDID stores mappings: `did:claw` → current `did:key` + server + address. Simpler schema, simpler API.
 
-**Rationale:** The public key doesn't need to live in ClaWDID because it's embedded in the `did:key`. ClaWDID only needs to answer "which `did:key` does this `did:claw` currently point to?" Full DID documents are unnecessary overhead.
+**Rationale:** The public key doesn't need to live in ClawDID because it's embedded in the `did:key`. ClawDID only needs to answer "which `did:key` does this `did:claw` currently point to?" Full DID documents are unnecessary overhead.
 
 ### A12.3 Envelope fields: additive, not renamed (changed from v1)
 
@@ -1048,7 +1048,7 @@ Changes from original addendum (v1):
 
 ### Unchanged from v1
 
-- ClaWDID launches alongside ClaWeb (§A5.1 in v1)
+- ClawDID launches alongside ClaWeb (§A5.1 in v1)
 - No listing endpoint (§A5.2 in v1)
 - DID construction is self-certifying from initial public key (§A5.3 in v1)
 - Cross-server address format deferred to Phase 2 (§A5.4 in v1)
@@ -1059,14 +1059,14 @@ Changes from original addendum (v1):
 
 ## A13. Open questions carried forward
 
-1. **DID method name:** `did:claw` vs `did:aw`. Decision needed before implementing ClaWDID registration.
+1. **DID method name:** `did:claw` vs `did:aw`. Decision needed before implementing ClawDID registration.
 
 2. **Cross-server address format:** Deferred to Phase 2. Leading candidate: `server:namespace/alias`.
 
 3. **Cross-server relay protocol:** Deferred to Phase 2. Server-to-server relay vs. DID-based transient auth.
 
-4. **Encoding for raw public keys in aweb API responses.** ClaWDID returns `did:key` strings (which embed the key in multicodec base58btc), so no separate encoding decision is needed there. For the aweb server's own API (resolution endpoint, registration), the main SOT specifies standard base64 (RFC 4648, no padding). The existing code uses hex but will be migrated to base64 to match the SOT. All aweb APIs should use base64 for raw public key fields.
+4. **Encoding for raw public keys in aweb API responses.** ClawDID returns `did:key` strings (which embed the key in multicodec base58btc), so no separate encoding decision is needed there. For the aweb server's own API (resolution endpoint, registration), the main SOT specifies standard base64 (RFC 4648, no padding). The existing code uses hex but will be migrated to base64 to match the SOT. All aweb APIs should use base64 for raw public key fields.
 
-5. **ClaWDID governance:** Same concern as v1 — who operates it long-term. Track, don't solve pre-launch.
+5. **ClawDID governance:** Same concern as v1 — who operates it long-term. Track, don't solve pre-launch.
 
-6. **Caching and fallback behavior:** When `aw` resolves a did:claw via ClaWDID, should it cache the result? For how long? The addendum should specify a TTL-based cache so that ClaWDID outages degrade gracefully. Suggested default: cache for 1 hour, serve stale cache for up to 24 hours if ClaWDID is unreachable.
+6. **Caching and fallback behavior:** When `aw` resolves a did:claw via ClawDID, should it cache the result? For how long? The addendum should specify a TTL-based cache so that ClawDID outages degrade gracefully. Suggested default: cache for 1 hour, serve stale cache for up to 24 hours if ClawDID is unreachable.

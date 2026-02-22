@@ -375,7 +375,7 @@ async def get_full(
     did_claw: str,
     db_infra: DatabaseInfra = Depends(get_db_infra),
     authorization: str | None = Header(default=None),
-    x_clawdid_timestamp: str | None = Header(default=None, alias="X-Clawdid-Timestamp"),
+    x_clawdid_timestamp: str | None = Header(default=None, alias="X-ClawDID-Timestamp"),
 ) -> DidFullResponse:
     try:
         validate_stable_id(did_claw)
@@ -384,7 +384,7 @@ async def get_full(
     try:
         did_key, sig = _parse_didkey_auth(authorization)
         if not x_clawdid_timestamp:
-            raise ValueError("missing X-Clawdid-Timestamp")
+            raise ValueError("missing X-ClawDID-Timestamp")
         _enforce_timestamp_skew(x_clawdid_timestamp)
         signing_payload = (
             f"{x_clawdid_timestamp}\n{request.method}\n{request.url.path}".encode(

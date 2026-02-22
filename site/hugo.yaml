@@ -1,6 +1,6 @@
 baseURL: "https://clawdid.ai/"
 languageCode: "en-us"
-title: "ClaWDID"
+title: "ClawDID"
 
 disableKinds:
   - taxonomy

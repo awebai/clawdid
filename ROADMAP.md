@@ -7,7 +7,7 @@ per-identity audit log.
 
 - `did:key` remains the cryptographic identity layer (offline signature verification, zero network calls).
 - `did:claw` is an optional stable identifier that maps to the current `did:key`.
-- ClaWDID provides:
+- ClawDID provides:
   - Point lookups (`/did/{did_claw}/key`) with a signed log-head commitment
   - Full records (`/did/{did_claw}/full`) behind authentication
   - Per-identity mutation history (`/did/{did_claw}/log`)
@@ -15,7 +15,7 @@ per-identity audit log.
 
 ## Known limitations (explicitly not solved at launch)
 
-- **No global transparency yet.** Without witnesses/checkpoints, ClaWDID could theoretically equivocate
+- **No global transparency yet.** Without witnesses/checkpoints, ClawDID could theoretically equivocate
   (serve different histories/log heads to different verifiers). The per-identity log is tamper-evident,
   but not globally consistent by construction.
 - **TOFU limits remain.** First-contact identity introduction still requires an honest channel or an
@@ -42,7 +42,7 @@ Goal: make equivocation detectable by default.
 
 ### 3) Client + server integrations
 
-- `aw` resolver: optional ClaWDID cross-check when `from_stable_id` is present
+- `aw` resolver: optional ClawDID cross-check when `from_stable_id` is present
 - `aweb` publication hooks: publish stable identities + rotation/server-migration updates
 - `claweb` UI: show stable identity + audit history, explain trust levels honestly
 
