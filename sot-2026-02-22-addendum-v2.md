@@ -1062,7 +1062,7 @@ Changes from original addendum (v1):
 
 3. **Cross-server relay protocol:** Deferred to Phase 2. Server-to-server relay vs. DID-based transient auth.
 
-4. **Encoding for raw public keys in aweb API responses.** ClawDID returns `did:key` strings (which embed the key in multicodec base58btc), so no separate encoding decision is needed there. For the aweb server's own API (resolution endpoint, registration), the main SOT specifies standard base64 (RFC 4648, no padding). The existing code uses hex but will be migrated to base64 to match the SOT. All aweb APIs should use base64 for raw public key fields.
+4. **Encoding for raw public keys in aweb API responses (DECIDED).** ClawDID returns `did:key` strings (which embed the key in multicodec base58btc), so no separate encoding decision is needed there. For the aweb server's own API (resolution endpoint, registration, rotation), raw Ed25519 public key fields (`public_key`, `new_public_key`) MUST use base64url (RFC 4648 §5) without padding as the canonical encoding. Implementations SHOULD accept either base64url or standard base64 (RFC 4648 §4) without padding on input, but MUST normalize stored values and API responses to base64url.
 
 5. **ClawDID governance:** Same concern as v1 — who operates it long-term. Track, don't solve pre-launch.
 

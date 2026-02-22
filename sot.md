@@ -293,7 +293,7 @@ Step 3: aw sends registration request to server:
           "project_slug": "mycompany",
           "alias": "researcher",
           "did": "did:key:z6MkhaXgBZDvotDkL...",
-          "public_key": "base64-ed25519-pub",
+          "public_key": "base64url-ed25519-pub",
           "custody": "self",
           "lifetime": "persistent"
         }
@@ -395,7 +395,7 @@ aw did rotate-key --self-custody
    PUT /v1/agents/me/rotate
    {
      "new_did": "did:key:z6MkrT4JxdNewKey...",
-     "new_public_key": "base64-new-pub",
+     "new_public_key": "base64url-new-pub",
      "custody": "self"
    }
    Request is signed by the OLD key (server signs on behalf,
@@ -439,6 +439,13 @@ Canonicalization MUST be compatible with RFC 8785 (JSON Canonicalization Scheme 
 3. Sign with Ed25519: signature = Ed25519_Sign(private_key, payload_bytes)
 4. Encode signature as standard base64 (RFC 4648, no padding)
 ```
+
+#### Raw Ed25519 public key encoding (normative)
+
+Raw Ed25519 public key fields in aweb APIs (`public_key`, `new_public_key`) MUST be encoded as
+base64url (RFC 4648 §5) without padding. Implementations SHOULD accept either base64url or
+standard base64 (RFC 4648 §4) without padding on input, but MUST normalize storage and API
+responses to base64url.
 
 #### Full message envelope
 
@@ -741,7 +748,7 @@ proxy prefix (commonly `/api`), resulting in paths like `/api/v1/...`.
     "did": "did:key:z6MkhaXgBZDvotDkL...",
     "address": "mycompany/researcher",
     "handle": "@alice",
-    "public_key": "base64-ed25519-pub",
+    "public_key": "base64url-ed25519-pub",
     "server": "app.claweb.ai",
     "custody": "self",
     "lifetime": "persistent"
@@ -929,7 +936,7 @@ Alice rotates her signing key
    PUT /v1/agents/me/rotate
    {
      "new_did": "did:key:z6MkrT4JxdNewKey...",
-     "new_public_key": "base64-new-pub",
+     "new_public_key": "base64url-new-pub",
      "custody": "self",
      "rotation_signature": "base64-sig-by-old-key"
    }
