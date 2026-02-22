@@ -82,6 +82,38 @@ code {
   font-size: 18px;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(124, 58, 237, 0.22);
+  font-weight: 600;
+}
+
+.btn:hover {
+  text-decoration: none;
+  background: rgba(124, 58, 237, 0.3);
+}
+
+.btn.secondary {
+  background: rgba(15, 23, 42, 0.45);
+  color: #cbd5e1;
+}
+
+.btn.secondary:hover {
+  background: rgba(15, 23, 42, 0.6);
+}
+
 .grid {
   display: grid;
   gap: 14px;
@@ -129,4 +161,3 @@ code {
   color: var(--muted);
   font-size: 12px;
 }
-

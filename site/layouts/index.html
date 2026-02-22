@@ -3,6 +3,11 @@
   <h1>ClaWDID</h1>
   <p class="tagline">{{ .Site.Params.tagline }}</p>
 
+  <div class="actions">
+    <a class="btn" href="{{ .Site.Params.verifierUrl }}">Try the verifier</a>
+    <a class="btn secondary" href="/docs/">Read the docs</a>
+  </div>
+
   <div class="card">
     <h2>What it is</h2>
     <p>
@@ -31,10 +36,9 @@
       <h3>Roadmap</h3>
       <p>
         Launch focuses on correctness and interoperability. Transparency witnesses and checkpointing are planned next.
-        See <code>ROADMAP.md</code> in the repo.
+        See <a href="https://github.com/awebai/clawdid/blob/main/ROADMAP.md" target="_blank" rel="noreferrer">ROADMAP.md</a>.
       </p>
     </div>
   </div>
 </section>
 {{ end }}
-

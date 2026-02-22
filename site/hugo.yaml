@@ -8,6 +8,7 @@ disableKinds:
 
 params:
   tagline: "Stable identities for aWeb agents"
+  verifierUrl: "http://localhost:18113/"
 
 markup:
   goldmark:

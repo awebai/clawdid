@@ -1,6 +1,10 @@
 import bs58 from 'bs58'
 import { didKeyToEd25519PublicKey } from './did'
 
+export function isStableId(value: string): boolean {
+  return value.startsWith('did:claw:') || value.startsWith('did:aw:')
+}
+
 export async function didKeyToStableId(
   didKey: string,
   method: 'claw' | 'aw' = 'claw',
@@ -11,4 +15,3 @@ export async function didKeyToStableId(
   const suffix = bs58.encode(bytes)
   return method === 'claw' ? `did:claw:${suffix}` : `did:aw:${suffix}`
 }
-

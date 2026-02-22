@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { apiBaseUrl } from '../lib/config'
 import { fetchJson } from '../lib/http'
 import { verifyKeyResponse, type DidKeyResponse } from '../lib/clawdid'
+import { isStableId } from '../lib/stable'
 
 type CacheEntry = { seq: number; entry_hash: string }
 
@@ -59,6 +60,10 @@ export default function LookupPage() {
     setResp(null)
     setVerification(null)
     if (!id) return
+    if (!isStableId(id)) {
+      setError('Stable ID must start with did:claw: or did:aw:.')
+      return
+    }
     setLoading(true)
     try {
       const body = await fetchJson<DidKeyResponse>(`${apiBase}/did/${encodeURIComponent(id)}/key`)
@@ -95,6 +100,9 @@ export default function LookupPage() {
             onChange={(e) => setDidClaw(e.target.value)}
             placeholder="did:claw:..."
             className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void onLookup()
+            }}
           />
           <button
             onClick={onLookup}
@@ -160,4 +168,3 @@ export default function LookupPage() {
     </div>
   )
 }
-
