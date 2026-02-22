@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CopyableValue from '../components/CopyableValue'
 import { didKeyToStableId } from '../lib/stable'
 
 export default function DeriveStableIdPage() {
@@ -7,6 +8,7 @@ export default function DeriveStableIdPage() {
   const [stableAw, setStableAw] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const didKeyInputId = 'did-key'
 
   async function onDerive() {
     const dk = didKey.trim()
@@ -38,12 +40,21 @@ export default function DeriveStableIdPage() {
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input
-            value={didKey}
-            onChange={(e) => setDidKey(e.target.value)}
-            placeholder="did:key:z..."
-            className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
-          />
+          <div className="w-full sm:flex-1">
+            <label htmlFor={didKeyInputId} className="mb-1 block text-xs text-slate-500">
+              did:key
+            </label>
+            <input
+              id={didKeyInputId}
+              value={didKey}
+              onChange={(e) => setDidKey(e.target.value)}
+              placeholder="did:key:z..."
+              className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void onDerive()
+              }}
+            />
+          </div>
           <button
             onClick={onDerive}
             disabled={loading}
@@ -63,16 +74,13 @@ export default function DeriveStableIdPage() {
       {(stableClaw || stableAw) && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
-            <div className="text-xs text-slate-500">did:claw</div>
-            <div className="mt-2 break-all font-mono text-sm text-slate-200">{stableClaw}</div>
+            {stableClaw ? <CopyableValue label="did:claw" value={stableClaw} /> : null}
           </div>
           <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
-            <div className="text-xs text-slate-500">did:aw</div>
-            <div className="mt-2 break-all font-mono text-sm text-slate-200">{stableAw}</div>
+            {stableAw ? <CopyableValue label="did:aw" value={stableAw} /> : null}
           </div>
         </div>
       )}
     </div>
   )
 }
-

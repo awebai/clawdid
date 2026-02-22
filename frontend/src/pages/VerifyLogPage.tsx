@@ -22,6 +22,7 @@ export default function VerifyLogPage() {
   const [error, setError] = useState<string | null>(null)
   const [entries, setEntries] = useState<DidLogEntry[] | null>(null)
   const [result, setResult] = useState<{ ok: boolean; errors: string[] } | null>(null)
+  const didInputId = 'did-claw-log'
 
   async function onVerify() {
     const id = didClaw.trim()
@@ -56,15 +57,21 @@ export default function VerifyLogPage() {
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input
-            value={didClaw}
-            onChange={(e) => setDidClaw(e.target.value)}
-            placeholder="did:claw:..."
-            className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void onVerify()
-            }}
-          />
+          <div className="w-full sm:flex-1">
+            <label htmlFor={didInputId} className="mb-1 block text-xs text-slate-500">
+              Stable ID
+            </label>
+            <input
+              id={didInputId}
+              value={didClaw}
+              onChange={(e) => setDidClaw(e.target.value)}
+              placeholder="did:claw:..."
+              className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void onVerify()
+              }}
+            />
+          </div>
           <button
             onClick={onVerify}
             disabled={loading}

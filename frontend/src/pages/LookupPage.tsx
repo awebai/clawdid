@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import CopyableValue from '../components/CopyableValue'
 import { apiBaseUrl } from '../lib/config'
 import { fetchJson } from '../lib/http'
 import { verifyKeyResponse, type DidKeyResponse } from '../lib/clawdid'
@@ -53,6 +54,7 @@ export default function LookupPage() {
   const [verification, setVerification] = useState<
     Awaited<ReturnType<typeof verifyKeyResponse>> | null
   >(null)
+  const didInputId = 'did-claw'
 
   async function onLookup() {
     const id = didClaw.trim()
@@ -95,15 +97,21 @@ export default function LookupPage() {
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input
-            value={didClaw}
-            onChange={(e) => setDidClaw(e.target.value)}
-            placeholder="did:claw:..."
-            className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void onLookup()
-            }}
-          />
+          <div className="w-full sm:flex-1">
+            <label htmlFor={didInputId} className="mb-1 block text-xs text-slate-500">
+              Stable ID
+            </label>
+            <input
+              id={didInputId}
+              value={didClaw}
+              onChange={(e) => setDidClaw(e.target.value)}
+              placeholder="did:claw:..."
+              className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void onLookup()
+              }}
+            />
+          </div>
           <button
             onClick={onLookup}
             disabled={loading}
@@ -129,14 +137,8 @@ export default function LookupPage() {
             </div>
             {resp && (
               <div className="mt-3 space-y-2 text-sm">
-                <div>
-                  <div className="text-xs text-slate-500">did_claw</div>
-                  <div className="break-all font-mono text-slate-200">{resp.did_claw}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-500">current_did_key</div>
-                  <div className="break-all font-mono text-slate-200">{resp.current_did_key}</div>
-                </div>
+                <CopyableValue label="did_claw" value={resp.did_claw} />
+                <CopyableValue label="current_did_key" value={resp.current_did_key} />
               </div>
             )}
             {verification?.status !== 'OK_VERIFIED' && verification && (
