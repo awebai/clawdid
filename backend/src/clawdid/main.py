@@ -11,6 +11,7 @@ from pgdbm import AsyncDatabaseManager, DatabaseConfig
 
 from clawdid.config import settings
 from clawdid.db import DatabaseInfra
+from clawdid.ratelimit import build_rate_limiter
 from clawdid.routes.did import router as did_router
 from clawdid.routes.ops import router as ops_router
 
@@ -37,7 +38,22 @@ async def lifespan(app: FastAPI):
 
     app.state.db = infra
     app.state.pool = shared_pool
+    redis = None
+    if settings.rate_limit_enabled and settings.rate_limit_backend == "redis":
+        if not settings.rate_limit_redis_url:
+            raise ValueError(
+                "rate_limit_backend=redis requires RATE_LIMIT_REDIS_URL/REDIS_URL"
+            )
+        from redis.asyncio import Redis
+
+        redis = Redis.from_url(settings.rate_limit_redis_url)
+        app.state.redis = redis
+    else:
+        app.state.redis = None
+    app.state.rate_limiter = build_rate_limiter(redis=redis)
     yield
+    if app.state.redis is not None:
+        await app.state.redis.close()
     await infra.close()
     await shared_pool.close()
 

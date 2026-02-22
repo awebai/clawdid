@@ -50,3 +50,8 @@ Recommended:
 - `LOG_JSON=true`
 - `LOG_LEVEL=INFO`
 - `TRUST_PROXY_HEADERS=true`
+
+Rate limiting (recommended for public deploys):
+- `RATE_LIMIT_ENABLED=true`
+- `RATE_LIMIT_BACKEND=redis` and `RATE_LIMIT_REDIS_URL=redis://...` (recommended for multi-instance)
+- If you already have a WAF (Cloudflare/Render/ALB), prefer edge rate limiting and keep app-level limits as a backstop.

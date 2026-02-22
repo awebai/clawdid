@@ -23,6 +23,7 @@ from clawdid.models import (
     DidRegisterRequest,
     DidUpdateRequest,
 )
+from clawdid.ratelimit import rate_limit_dep
 from clawdid.signing import canonical_json_bytes, verify_did_key_signature
 
 router = APIRouter(prefix="/did", tags=["did"])
@@ -137,7 +138,7 @@ def _state_hash(
     return _sha256_hex(payload)
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(rate_limit_dep("did_register"))])
 async def register_did(
     req: DidRegisterRequest,
     db_infra: DatabaseInfra = Depends(get_db_infra),
@@ -240,7 +241,11 @@ async def register_did(
     return {"registered": True}
 
 
-@router.get("/{did_claw}/key", response_model=DidKeyResponse)
+@router.get(
+    "/{did_claw}/key",
+    response_model=DidKeyResponse,
+    dependencies=[Depends(rate_limit_dep("did_key"))],
+)
 async def get_key(
     did_claw: str,
     db_infra: DatabaseInfra = Depends(get_db_infra),
@@ -294,7 +299,11 @@ async def get_key(
     )
 
 
-@router.get("/{did_claw}/head", response_model=DidHeadResponse)
+@router.get(
+    "/{did_claw}/head",
+    response_model=DidHeadResponse,
+    dependencies=[Depends(rate_limit_dep("did_head"))],
+)
 async def get_head(
     did_claw: str,
     db_infra: DatabaseInfra = Depends(get_db_infra),
@@ -356,7 +365,11 @@ def _parse_didkey_auth(authorization: str | None) -> tuple[str, str]:
     return parts[1], parts[2]
 
 
-@router.get("/{did_claw}/full", response_model=DidFullResponse)
+@router.get(
+    "/{did_claw}/full",
+    response_model=DidFullResponse,
+    dependencies=[Depends(rate_limit_dep("did_full"))],
+)
 async def get_full(
     request: Request,
     did_claw: str,
@@ -410,7 +423,11 @@ async def get_full(
     )
 
 
-@router.get("/{did_claw}/log", response_model=list[DidLogEntry])
+@router.get(
+    "/{did_claw}/log",
+    response_model=list[DidLogEntry],
+    dependencies=[Depends(rate_limit_dep("did_log"))],
+)
 async def get_log(
     did_claw: str,
     db_infra: DatabaseInfra = Depends(get_db_infra),

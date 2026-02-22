@@ -926,7 +926,7 @@ ClaWDID at launch is a small service. It does not need to be complex.
 
 **Storage:** Postgres or SQLite. Two tables (mappings + log) as described in §A2.
 
-**Endpoints:** Five, as described in §A2.
+**Endpoints:** Six, as described in §A2 (including the lightweight `GET /did/{did_claw}/head`).
 
 **Authentication for `/full`:** Requesting agent includes `Authorization: DIDKey <did:key> <signature>` and an `X-Clawdid-Timestamp` header. ClaWDID extracts the public key from the `did:key` (offline, no lookup needed — `did:key` is self-contained), verifies the signature over the canonical string:
 
@@ -938,6 +938,7 @@ ClaWDID enforces a short timestamp skew window (e.g., 5 minutes). This confirms 
 
 **Rate limiting:**
 - `/key`: 60 req/min/IP (public, the workhorse)
+- `/head`: 120 req/min/IP (public, polling)
 - `/full`: 30 req/min/authenticated-agent
 - `/log`: 30 req/min/IP
 - `POST /did`: 10 req/hour/IP (registration)
