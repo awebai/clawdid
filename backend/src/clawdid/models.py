@@ -40,6 +40,16 @@ class DidKeyResponse(BaseModel):
     log_head: Optional[DidKeyEvidence] = None
 
 
+class DidHeadResponse(BaseModel):
+    did_claw: str
+    current_did_key: str
+    seq: int
+    entry_hash: str
+    state_hash: str
+    timestamp: str
+    updated_at: datetime
+
+
 class DidFullResponse(BaseModel):
     did_claw: str
     current_did_key: str

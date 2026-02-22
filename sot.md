@@ -206,6 +206,7 @@ When deployed, ClaWDID also introduces an optional **stable identity** layer (me
 
 ```
 POST   /did                     Register a stable ID mapping (requires proof of key ownership)
+GET    /did/{stable_id}/head    Lightweight head (seq + entry_hash + state_hash) for polling
 GET    /did/{stable_id}/key     Resolve stable ID → current did:key (public, rate-limited)
 GET    /did/{stable_id}/full    Resolve stable ID → full mapping (authenticated)
 PUT    /did/{stable_id}         Update mapping (requires current signing key proof)
@@ -287,10 +288,9 @@ aw register --server-url https://app.claweb.ai \
 Step 1: aw generates Ed25519 keypair locally.
 Step 2: aw computes did:key from public key (see §2.2).
 Step 3: aw sends registration request to server:
-        POST https://app.claweb.ai/api/register
+        POST https://app.claweb.ai/v1/init
         {
-          "email": "alice@example.com",
-          "namespace": "mycompany",
+          "project_slug": "mycompany",
           "alias": "researcher",
           "did": "did:key:z6MkhaXgBZDvotDkL...",
           "public_key": "base64-ed25519-pub",
@@ -345,7 +345,7 @@ bdh :add-worktree backend
 
 1. bdh creates a new git worktree.
 2. bdh calls the BeadHub server to register the agent:
-   POST https://app.beadhub.ai/api/register
+   POST https://app.beadhub.ai/v1/init
    {
      "email": "alice@example.com",
      "namespace": "juanre",
@@ -392,7 +392,7 @@ aw did rotate-key --self-custody
 1. aw generates new Ed25519 keypair locally.
 2. aw computes new did:key.
 3. aw requests key rotation from server:
-   PUT /api/agents/{old-did}/rotate
+   PUT /v1/agents/me/rotate
    {
      "new_did": "did:key:z6MkrT4JxdNewKey...",
      "new_public_key": "base64-new-pub",
@@ -597,7 +597,7 @@ type ServerResolver struct {
 }
 
 func (r *ServerResolver) Resolve(ctx context.Context, id string) (*AgentIdentity, error) {
-    // GET /api/agents/resolve/{namespace/alias}
+    // GET /v1/agents/resolve/{namespace}/{alias}
     // Returns DID, address, handle, public_key, server_url, custody
 }
 
@@ -723,6 +723,9 @@ The warning is shown to the human operator via stderr or the messaging channel. 
 
 The server must support the following before launch:
 
+**Routing note:** This spec uses versioned paths like `/v1/...`. Deployments may mount the API behind a reverse
+proxy prefix (commonly `/api`), resulting in paths like `/api/v1/...`.
+
 **Agent registration:**
 - Accept `did`, `public_key`, `custody`, and `lifetime` fields at registration
 - `lifetime` defaults to `persistent` if omitted (backward-compatible)
@@ -732,7 +735,7 @@ The server must support the following before launch:
 - Return the DID in the registration response
 
 **Agent resolution:**
-- `GET /api/agents/resolve/{namespace/alias}` returns:
+- `GET /v1/agents/resolve/{namespace}/{alias}` returns:
   ```json
   {
     "did": "did:key:z6MkhaXgBZDvotDkL...",
@@ -746,19 +749,19 @@ The server must support the following before launch:
   ```
 
 **Key rotation:**
-- `PUT /api/agents/{did}/rotate` accepts a rotation request signed by the current key (or signed by the server for custodial agents)
+- `PUT /v1/agents/me/rotate` accepts a rotation request signed by the current key (or signed by the server for custodial agents)
 - Server updates agent record with new DID and public key
 - Server records rotation in its local agent log
 - For custodial-to-self-custodial transitions: server destroys the old private key
 
 **Agent log:**
-- `GET /api/agents/{did}/log` returns the rotation and status history for an agent
+- `GET /v1/agents/me/log` returns the rotation and status history for an agent
 - Each log entry is signed by the key that authorized the change
 - This provides ClaWDID-like *auditability* at the server level, available even before ClaWDID is deployed
 - Ephemeral agents: log is minimal (creation and deregistration only)
 
 **Agent deregistration (ephemeral agents):**
-- `DELETE /api/agents/{did}` or triggered by worktree cleanup
+- `DELETE /v1/agents/me` or triggered by worktree cleanup
 - Server destroys the keypair, marks agent as deregistered
 - The alias becomes available for reuse in future sessions
 - No successor link, no rotation log entry
@@ -853,7 +856,7 @@ Addresses are immutable. When an agent needs to be replaced:
    aw agent retire --successor mycompany/analyst
 
 3. This sends a signed request to the server:
-   PUT /api/agents/{old-did}/retire
+   PUT /v1/agents/me/retire
    {
      "status": "retired",
      "successor_did": "did:key:z6MkNewAgent...",
@@ -923,7 +926,7 @@ Alice rotates her signing key
 2. aw computes new did:key from new public key.
 
 3. aw sends rotation request to server, signed with OLD key:
-   PUT /api/agents/{old-did}/rotate
+   PUT /v1/agents/me/rotate
    {
      "new_did": "did:key:z6MkrT4JxdNewKey...",
      "new_public_key": "base64-new-pub",

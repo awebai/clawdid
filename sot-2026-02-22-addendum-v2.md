@@ -116,6 +116,24 @@ This repo publishes deterministic conformance vectors for this section in `vecto
 {"address":"mycompany/researcher","current_did_key":"did:key:...","did_claw":"did:claw:...","handle":"@alice","server":"https://app.claweb.ai"}
 ```
 
+**Canonical server URL (normative):**
+
+To avoid `state_hash` mismatches across implementations, the `mapping_state.server` field MUST be a canonical
+**origin-only** URL:
+
+- Scheme MUST be `https` (or `http` for local development)
+- Hostname MUST be lowercase
+- No trailing slash
+- No path, query, fragment, or userinfo
+- Port MUST be omitted when it is the default (`:443` for `https`, `:80` for `http`)
+
+Examples:
+- ✅ `https://app.claweb.ai`
+- ✅ `http://127.0.0.1:18111`
+- ❌ `https://app.claweb.ai/`
+- ❌ `https://app.claweb.ai/api`
+- ❌ `HTTPS://APP.CLAWEB.AI`
+
 **Log entry payload (normative):**
 
 `entry_payload_bytes = canonical_json(log_entry_payload)` where:
@@ -147,11 +165,15 @@ This principle is unchanged from v1. ClaWDID has **no listing endpoint.** There 
 
 ```
 POST   /did                    Register a new did:claw (requires proof of did:key ownership)
+GET    /did/{did_claw}/head    Lightweight head (seq + entry_hash + state_hash) for polling
 GET    /did/{did_claw}/key     Current did:key mapping (public, rate-limited)
 GET    /did/{did_claw}/full    Full record incl. server + address (authenticated)
 GET    /did/{did_claw}/log     Mutation history for this did:claw (public, for auditing)
 PUT    /did/{did_claw}         Update mapping (key rotation, server migration — requires signing key)
 ```
+
+Compatibility note: ClaWDID serves the same routes under `/v1/did/...` (e.g. `GET /v1/did/{did_claw}/key`)
+for clients that standardize on aweb-style versioned routing.
 
 **`GET /did/{did_claw}/key`** — the workhorse. Called when an agent wants to cross-check a stable identity against a `did:key`. Public, rate-limited.
 
@@ -232,6 +254,8 @@ A `did:claw` is derived from the agent's **initial** Ed25519 public key — the 
 ```
 did:claw = "did:claw:" + base58btc(sha256(initial_public_key_bytes)[:20])
 ```
+
+The suffix is raw base58btc (Bitcoin alphabet) with **no multibase prefix** (i.e. not `z...`).
 
 Note: 20 bytes (160 bits) rather than the 16 bytes proposed in v1, giving a birthday-attack bound of ~2^80 rather than ~2^64. Minimal length increase, significantly better collision resistance.
 
@@ -348,7 +372,7 @@ ALICE'S SIDE — preparing to send
 
 1. Resolve address via aweb server
 
-   aw → GET https://app.claweb.ai/api/resolve/acme/monitor
+   aw → GET https://app.claweb.ai/v1/agents/resolve/acme/monitor
       ← {
            did_key: "did:key:z6MkBob...",
            stable_id: "did:claw:Qm9iJ3x...",     // may be null
@@ -428,7 +452,7 @@ ALICE'S SIDE — preparing to send
 
 5. Send to server
 
-   aw → POST https://app.claweb.ai/api/mail/send
+   aw → POST https://app.claweb.ai/v1/messages
         { ...envelope with signature... }
 
    Server reads "to": "acme/monitor", delivers to Bob's inbox.
@@ -441,7 +465,7 @@ BOB'S SIDE — receiving and verifying
 
 6. Read inbox
 
-   aw → GET https://app.claweb.ai/api/mail/inbox?unread=true
+   aw → GET https://app.claweb.ai/v1/messages/inbox?unread_only=true
       ← [ { full message envelope } ]
 
 7. Verify signature (offline — no network required)
@@ -563,15 +587,15 @@ Alice is on ClaWeb. Bob is on BeadHub. Alice knows Bob's `did:claw`.
 3. Delivery — Alice needs to reach BeadHub.
 
    Option A — Alice has a session on BeadHub:
-     aw → POST https://beadhub.ai/api/mail/send { ...envelope... }
+     aw → POST https://beadhub.ai/v1/messages { ...envelope... }
 
    Option B — Server-to-server relay:
-     aw → POST https://app.claweb.ai/api/mail/relay
+     aw → POST https://app.claweb.ai/v1/messages/relay
           { destination_server: "https://beadhub.ai", ...envelope... }
      ClaWeb forwards to BeadHub.
 
    Option C — DID-based transient auth (Phase 2b):
-     aw → POST https://beadhub.ai/api/mail/send-external
+     aw → POST https://beadhub.ai/v1/messages/send-external
           { ...envelope, proof_of_identity: <challenge-response>... }
      BeadHub verifies Alice's did:key, accepts message without full account.
 
@@ -781,19 +805,20 @@ Step 2 — Register did:claw with ClaWDID (optional, on by default for ClaWeb)
   Ephemeral agents skip this step.
 
 Step 3 — Register agent with aweb server
-  aw → POST https://app.claweb.ai/api/register
+  aw → POST https://app.claweb.ai/v1/init
   {
-    "email": "alice@example.com",
-    "namespace": "mycompany",
     "alias": "researcher",
-    "did_key": "did:key:z6MkAlice...",
-    "stable_id": "did:claw:7Fq3xB4e9cNm2kPvWn4"  // null if skipped
+    "project_slug": "mycompany",
+    "did": "did:key:z6MkAlice...",
+    "public_key": "base64url-ed25519-pub",
+    "custody": "self",
+    "lifetime": "persistent"
   }
 
   ClaWeb verifies:
-  - Email valid (verification code sent)
   - Namespace/alias available (immutable once created)
-  - If stable_id present: exists in ClaWDID with matching did:key
+  - DID/public_key consistent (did:key embeds the public key)
+  - (Future) If stable identity is integrated at the server layer: stable_id exists in ClaWDID with matching did:key
 
   ← { "api_key": "aw_sk_aaa..." }
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
@@ -15,6 +16,7 @@ from clawdid.did import (
 )
 from clawdid.models import (
     DidFullResponse,
+    DidHeadResponse,
     DidKeyEvidence,
     DidKeyResponse,
     DidLogEntry,
@@ -50,6 +52,42 @@ def _enforce_timestamp_skew(ts: str) -> None:
 
 def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _canonical_server_origin(server_url: str) -> str:
+    server_url = server_url.strip()
+    if not server_url:
+        raise ValueError("server URL must be non-empty")
+    parsed = urlparse(server_url)
+    scheme = (parsed.scheme or "").lower()
+    if scheme not in {"http", "https"}:
+        raise ValueError("server URL scheme must be http or https")
+    if parsed.username or parsed.password:
+        raise ValueError("server URL must not include userinfo")
+    if parsed.query or parsed.fragment:
+        raise ValueError("server URL must not include query or fragment")
+    if parsed.path not in {"", "/"}:
+        raise ValueError("server URL must not include a path (origin only)")
+    if not parsed.hostname:
+        raise ValueError("server URL must include a host")
+
+    host = parsed.hostname.lower()
+    # urlparse() removes brackets for IPv6; add them back for serialization.
+    host_out = f"[{host}]" if ":" in host and not host.startswith("[") else host
+
+    port = parsed.port
+    default_port = 80 if scheme == "http" else 443
+    port_out = None if port in (None, default_port) else port
+    return f"{scheme}://{host_out}{f':{port_out}' if port_out is not None else ''}"
+
+
+def _require_canonical_server_origin(server_url: str) -> str:
+    canonical = _canonical_server_origin(server_url)
+    if server_url != canonical:
+        raise ValueError(
+            f"server URL must be canonical origin form: {canonical} (no trailing slash, no path, lowercase host)"
+        )
+    return canonical
 
 
 def _log_entry_payload(
@@ -107,6 +145,7 @@ async def register_did(
     try:
         validate_stable_id(req.did_claw)
         _enforce_timestamp_skew(req.timestamp)
+        canonical_server = _require_canonical_server_origin(req.server)
         if req.seq != 1 or req.prev_entry_hash is not None:
             raise ValueError("seq must be 1 and prev_entry_hash must be null on create")
         if req.authorized_by != req.did_key:
@@ -134,7 +173,7 @@ async def register_did(
         state_hash = _state_hash(
             did_claw=req.did_claw,
             current_did_key=req.did_key,
-            server=req.server,
+            server=canonical_server,
             address=req.address,
             handle=req.handle,
         )
@@ -167,7 +206,7 @@ async def register_did(
             """,
             req.did_claw,
             req.did_key,
-            req.server,
+            canonical_server,
             req.address,
             req.handle,
             created_at,
@@ -255,6 +294,59 @@ async def get_key(
     )
 
 
+@router.get("/{did_claw}/head", response_model=DidHeadResponse)
+async def get_head(
+    did_claw: str,
+    db_infra: DatabaseInfra = Depends(get_db_infra),
+) -> DidHeadResponse:
+    """
+    Lightweight endpoint to learn the latest audit-log head without downloading the full log.
+
+    Intended for clients that want to poll for updates (seq/entry_hash) before fetching `/key` or `/log`.
+    """
+    try:
+        validate_stable_id(did_claw)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    db = db_infra.manager()
+    row = await db.fetch_one(
+        """
+        SELECT did_claw, current_did_key, updated_at
+        FROM {{tables.did_claw_mappings}}
+        WHERE did_claw = $1
+        """,
+        did_claw,
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="not found")
+
+    head = await db.fetch_one(
+        """
+        SELECT seq, entry_hash, state_hash, timestamp, new_did_key
+        FROM {{tables.did_claw_log}}
+        WHERE did_claw = $1
+        ORDER BY seq DESC
+        LIMIT 1
+        """,
+        did_claw,
+    )
+    if head is None:
+        raise HTTPException(status_code=500, detail="log missing for did_claw")
+    if head["new_did_key"] != row["current_did_key"]:
+        raise HTTPException(status_code=500, detail="mapping/log inconsistency")
+
+    return DidHeadResponse(
+        did_claw=row["did_claw"],
+        current_did_key=row["current_did_key"],
+        seq=head["seq"],
+        entry_hash=head["entry_hash"],
+        state_hash=head["state_hash"],
+        timestamp=head["timestamp"],
+        updated_at=row["updated_at"],
+    )
+
+
 def _parse_didkey_auth(authorization: str | None) -> tuple[str, str]:
     if not authorization:
         raise ValueError("missing Authorization")
@@ -303,10 +395,14 @@ async def get_full(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="not found")
+    try:
+        server_url = _require_canonical_server_origin(row["server_url"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
     return DidFullResponse(
         did_claw=row["did_claw"],
         current_did_key=row["current_did_key"],
-        server=row["server_url"],
+        server=server_url,
         address=row["address"],
         handle=row["handle"],
         created_at=row["created_at"],
@@ -364,6 +460,8 @@ async def update_mapping(
         _enforce_timestamp_skew(req.timestamp)
         # Ensure the new key is a syntactically valid did:key (Ed25519).
         public_key_from_did_key(req.new_did_key)
+        if req.server is not None:
+            _require_canonical_server_origin(req.server)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -406,7 +504,12 @@ async def update_mapping(
         if req.prev_entry_hash != prev_entry_hash:
             raise HTTPException(status_code=409, detail="prev_entry_hash mismatch")
 
-        server_url = req.server or row["server_url"]
+        try:
+            server_url = _require_canonical_server_origin(
+                req.server or row["server_url"]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
         address = req.address or row["address"]
         handle = req.handle if req.handle is not None else row["handle"]
 
