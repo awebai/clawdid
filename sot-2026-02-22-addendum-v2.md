@@ -246,6 +246,8 @@ When stable IDs are absent (ephemeral agent, no ClaWDID registration):
 
 Absent optional fields are simply omitted from the canonical form, not included as null. This means signatures from agents without stable IDs are still valid and verifiable — the payload is just shorter.
 
+**Implementation note:** The set of signed fields expands from 8 (`body`, `from`, `from_did`, `subject`, `timestamp`, `to`, `to_did`, `type`) to up to 10 when `from_stable_id` and `to_stable_id` are present. The signing code includes all fields present in the message that are in the signed fields set — absent optional fields are simply not in the message dict and are not serialized. Two messages with identical content but different stable ID presence will produce different canonical payloads and different signatures. This is correct behavior: the signature binds to exactly the fields present.
+
 ### Why `to_did` is in the signed payload
 
 If the signature only covered the body and sender identity, the server could take a legitimately signed message from Alice intended for Carol and deliver it to Bob instead. By including `to_did` in the signed payload, Alice cryptographically commits to who the message is for. If the server delivers it to the wrong inbox, Bob's `aw` client sees the mismatch:
@@ -557,6 +559,8 @@ Alice's human must tell Bob's human out-of-band that the rotation is real.
 ```
 
 This is the current model. It works. It's correct. It's the same security model as SSH.
+
+The aweb server mitigates bare TOFU warnings via **rotation announcements** (see main SOT §5.4). When an agent rotates its key, the server attaches a signed announcement to outgoing messages — a proof that the old key authorized the transition to the new key. This lets the receiver auto-accept the rotation without an interactive prompt. Announcements are delivered per-peer until the peer responds or 24 hours elapse, whichever comes first. This mechanism applies exclusively to agents without `did:claw`; agents with `did:claw` use the ClaWDID log for rotation verification instead (see below).
 
 ### With did:claw
 
@@ -880,6 +884,27 @@ This section explicitly addresses what changes and what doesn't.
 | `aw register` | Add optional ClaWDID registration step (skippable with flag) |
 | `aw introspect` | Display did:claw if registered |
 | Resolve endpoint (server API) | Return `stable_id` in response when present |
+| `signing.py` SIGNED_FIELDS | Expand to include `from_stable_id`, `to_stable_id` (only serialized when present in message) |
+
+### Server API path convention
+
+The aweb server uses the `/me/` pattern for self-operations and address-based paths for peer operations. Neither UUIDs nor DIDs appear in API paths — the bearer token identifies the caller, and addresses identify targets.
+
+**Self-operations** (bearer token = identity, no identifier needed in path):
+```
+PUT    /v1/agents/me/rotate       Key rotation
+PUT    /v1/agents/me/retire       Retirement with successor
+DELETE /v1/agents/me              Self-deregistration
+```
+
+**Peer operations** (bearer token = caller, path = target):
+```
+DELETE /v1/agents/{namespace}/{alias}       Peer deregistration (ephemeral agents)
+GET    /v1/agents/{namespace}/{alias}/log   View agent lifecycle log
+GET    /v1/agents/resolve/{namespace}/{alias}   Resolution (existing)
+```
+
+**Rationale:** DIDs are protocol-level identifiers for signing and verification, not server-level identifiers for routing. UUIDs are database internals. The server routes by address — the same principle as message delivery. The bearer token already identifies the agent for self-operations, making a path identifier redundant. The `aw` CLI resolves addresses to server-appropriate identifiers internally; the mapping between internal database IDs and protocol identifiers is the server's concern.
 
 ---
 
@@ -932,7 +957,7 @@ Changes from original addendum (v1):
 
 3. **Cross-server relay protocol:** Deferred to Phase 2. Server-to-server relay vs. DID-based transient auth.
 
-4. **Encoding for public keys in ClaWDID responses.** The existing codebase uses hex for did:key internals. ClaWDID responses should use the same encoding convention to avoid conversion layers. The agent flagged this: hex vs base64 vs multicodec base58btc. Align with whatever the existing code uses.
+4. **Encoding for raw public keys in aweb API responses.** ClaWDID returns `did:key` strings (which embed the key in multicodec base58btc), so no separate encoding decision is needed there. For the aweb server's own API (resolution endpoint, registration), the main SOT specifies standard base64 (RFC 4648, no padding). The existing code uses hex but will be migrated to base64 to match the SOT. All aweb APIs should use base64 for raw public key fields.
 
 5. **ClaWDID governance:** Same concern as v1 — who operates it long-term. Track, don't solve pre-launch.
 
