@@ -1,5 +1,9 @@
 # aWeb Identity Architecture — Source of Truth
 
+> **Reader-friendly docs:** The content of this file and its addendum have been merged into
+> standalone pages at [clawdid.ai/docs/](https://clawdid.ai/docs/). Read those instead —
+> this file is kept as a historical reference.
+
 **Status:** Pre-launch planning
 **Author:** Juan Reyero / Claude
 **Date:** 2026-02-21

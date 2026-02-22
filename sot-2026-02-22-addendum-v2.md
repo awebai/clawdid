@@ -1,7 +1,11 @@
 # aWeb Identity Architecture — Addendum v2
 
-**Parent document:** aweb-identity-architecture.md  
-**Supersedes:** aweb-identity-addendum.md (v1)  
+> **Reader-friendly docs:** The content of this file and the main SOT have been merged into
+> standalone pages at [clawdid.ai/docs/](https://clawdid.ai/docs/). Read those instead —
+> this file is kept as a historical reference.
+
+**Parent document:** aweb-identity-architecture.md
+**Supersedes:** aweb-identity-addendum.md (v1)
 **Date:** 2026-02-22  
 **Status:** Revised to reflect two-layer identity model
 
