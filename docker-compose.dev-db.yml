@@ -1,0 +1,25 @@
+# clawdid dev database (Postgres only)
+#
+# Uses non-standard host ports to avoid collisions with sibling projects.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "${DEV_POSTGRES_PORT:-15489}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_APP_USER:-clawdid}
+      POSTGRES_DB: ${POSTGRES_DB:-clawdid_dev}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_APP_USER:-clawdid} -d ${POSTGRES_DB:-clawdid_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+

@@ -9,11 +9,11 @@ include $(ENV_FILE)
 export
 endif
 
-CLAWDID_PORT ?= 8033
+CLAWDID_PORT ?= 18111
 POSTGRES_HOST ?= localhost
-POSTGRES_PORT ?= 5432
-POSTGRES_DB ?= clawdid
-POSTGRES_APP_USER ?= beadhub
+POSTGRES_PORT ?= 15489
+POSTGRES_DB ?= clawdid_dev
+POSTGRES_APP_USER ?= clawdid
 POSTGRES_ADMIN_DB ?= postgres
 POSTGRES_ADMIN_URL ?= postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_ADMIN_DB)
 DATABASE_URL ?= postgresql://$(POSTGRES_APP_USER)@localhost:$(POSTGRES_PORT)/$(POSTGRES_DB)
@@ -43,7 +43,7 @@ dev-check:
 		echo "    [OK] Running on port $(POSTGRES_PORT)"; \
 	else \
 		echo "    [MISSING] Not running on port $(POSTGRES_PORT)"; \
-		echo "             Fix: brew services start postgresql@14"; \
+		echo "             Fix: run Postgres on port $(POSTGRES_PORT) (recommended: from repo root run 'make dev-db-up')"; \
 		FAILED=1; \
 	fi; \
 	echo ""; \
@@ -79,15 +79,9 @@ dev-setup:
 	@if pg_isready -q -h $(POSTGRES_HOST) -p $(POSTGRES_PORT) 2>/dev/null; then \
 		echo "   Already running."; \
 	else \
-		brew services start postgresql@14 2>/dev/null || brew services start postgresql 2>/dev/null || \
-			(echo "   Failed to start PostgreSQL. Please install with: brew install postgresql@14" && exit 1); \
-		sleep 2; \
-		if pg_isready -q -h $(POSTGRES_HOST) -p $(POSTGRES_PORT) 2>/dev/null; then \
-			echo "   Started."; \
-		else \
-			echo "   Failed to start PostgreSQL."; \
-			exit 1; \
-		fi; \
+		echo "   Not running on port $(POSTGRES_PORT)."; \
+		echo "   Fix: from repo root run: make dev-db-up"; \
+		exit 1; \
 	fi
 	@echo ""
 	@echo "2. Creating PostgreSQL role '$(POSTGRES_APP_USER)'..."
