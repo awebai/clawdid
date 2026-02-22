@@ -1,11 +1,11 @@
-# aw ↔ ClawDID: verifying `GET /did/{did_claw}/key` (`log_head`)
+# aw ↔ ClawDID: verifying `GET /v1/did/{did_claw}/key` (`log_head`)
 
 This document specifies how an `aw` client (or any verifier) should validate the response from:
 
-- `GET /did/{did_claw}/key` (and `GET /v1/did/{did_claw}/key`)
+- `GET /v1/did/{did_claw}/key`
 
 The goal is to make `/key` responses **cryptographically checkable** without requiring the verifier to fetch
-the full `GET /did/{did_claw}/log`, while remaining honest about launch limitations (no global transparency yet).
+the full `GET /v1/did/{did_claw}/log`, while remaining honest about launch limitations (no global transparency yet).
 
 ## Scope
 
@@ -18,7 +18,7 @@ Not in scope:
 
 ## Response shape (normative)
 
-`GET /did/{did_claw}/key` returns:
+`GET /v1/did/{did_claw}/key` returns:
 
 ```json
 {
@@ -158,7 +158,7 @@ Rules:
 
 When receiving a message with `from_stable_id = did_claw`:
 
-- Resolve `GET /did/{did_claw}/key` and run the verification algorithm above.
+- Resolve `GET /v1/did/{did_claw}/key` and run the verification algorithm above.
 - If result is `OK_VERIFIED`:
   - Treat `current_did_key` as ClawDID’s signed view of the current key.
   - If it conflicts with the message envelope’s `from_did`, treat as a hard identity mismatch (reject or quarantine).

@@ -75,9 +75,8 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(ops_router)
-    app.include_router(did_router)
-    # Compatibility: allow both `/did/...` and `/v1/did/...` for clients that
-    # standardize on aweb-style versioned routing.
+    # Public API is versioned under `/v1/...` so we can introduce `/v2/...`
+    # without breaking existing clients.
     app.include_router(did_router, prefix="/v1")
 
     @app.exception_handler(HTTPException)

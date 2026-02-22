@@ -205,12 +205,12 @@ When deployed, ClawDID also introduces an optional **stable identity** layer (me
 **ClawDID API** (when deployed):
 
 ```
-POST   /did                     Register a stable ID mapping (requires proof of key ownership)
-GET    /did/{stable_id}/head    Lightweight head (seq + entry_hash + state_hash) for polling
-GET    /did/{stable_id}/key     Resolve stable ID → current did:key (public, rate-limited)
-GET    /did/{stable_id}/full    Resolve stable ID → full mapping (authenticated)
-PUT    /did/{stable_id}         Update mapping (requires current signing key proof)
-GET    /did/{stable_id}/log     Per-stable-ID audit log (public)
+POST   /v1/did                        Register a stable ID mapping (requires proof of key ownership)
+GET    /v1/did/{did_claw}/head         Lightweight head (seq + entry_hash + state_hash) for polling
+GET    /v1/did/{did_claw}/key          Resolve stable ID → current did:key (public, rate-limited)
+GET    /v1/did/{did_claw}/full         Resolve stable ID → full mapping (authenticated)
+PUT    /v1/did/{did_claw}              Update mapping (requires current signing key proof)
+GET    /v1/did/{did_claw}/log          Per-stable-ID audit log (public)
 ```
 
 ---

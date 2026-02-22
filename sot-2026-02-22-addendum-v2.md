@@ -104,7 +104,7 @@ did_claw_log:
 
 ### Canonical log entries (normative)
 
-The audit trail must be **self-verifying**: given only the `GET /did/{did_claw}/log` output, any verifier can (a) recompute each `entry_hash`, (b) verify each `signature` against `authorized_by` (a `did:key`), and (c) verify the hash-chain via `prev_entry_hash`.
+The audit trail must be **self-verifying**: given only the `GET /v1/did/{did_claw}/log` output, any verifier can (a) recompute each `entry_hash`, (b) verify each `signature` against `authorized_by` (a `did:key`), and (c) verify the hash-chain via `prev_entry_hash`.
 
 This repo publishes deterministic conformance vectors for this section in `vectors/clawdid-log-v1.json`.
 
@@ -164,18 +164,15 @@ This principle is unchanged from v1. ClawDID has **no listing endpoint.** There 
 ### ClawDID API surface
 
 ```
-POST   /did                    Register a new did:claw (requires proof of did:key ownership)
-GET    /did/{did_claw}/head    Lightweight head (seq + entry_hash + state_hash) for polling
-GET    /did/{did_claw}/key     Current did:key mapping (public, rate-limited)
-GET    /did/{did_claw}/full    Full record incl. server + address (authenticated)
-GET    /did/{did_claw}/log     Mutation history for this did:claw (public, for auditing)
-PUT    /did/{did_claw}         Update mapping (key rotation, server migration — requires signing key)
+POST   /v1/did                    Register a new did:claw (requires proof of did:key ownership)
+GET    /v1/did/{did_claw}/head    Lightweight head (seq + entry_hash + state_hash) for polling
+GET    /v1/did/{did_claw}/key     Current did:key mapping (public, rate-limited)
+GET    /v1/did/{did_claw}/full    Full record incl. server + address (authenticated)
+GET    /v1/did/{did_claw}/log     Mutation history for this did:claw (public, for auditing)
+PUT    /v1/did/{did_claw}         Update mapping (key rotation, server migration — requires signing key)
 ```
 
-Compatibility note: ClawDID serves the same routes under `/v1/did/...` (e.g. `GET /v1/did/{did_claw}/key`)
-for clients that standardize on aweb-style versioned routing.
-
-**`GET /did/{did_claw}/key`** — the workhorse. Called when an agent wants to cross-check a stable identity against a `did:key`. Public, rate-limited.
+**`GET /v1/did/{did_claw}/key`** — the workhorse. Called when an agent wants to cross-check a stable identity against a `did:key`. Public, rate-limited.
 
 ```json
 {
@@ -203,7 +200,7 @@ This reveals the current `did:key` **plus a verifiable commitment** to the lates
 
 This does leak minimal metadata (e.g. the latest `seq` and `timestamp`) to anyone who already knows the `did:claw`. That is an acceptable tradeoff for making `/key` responses cryptographically checkable without requiring `GET /log`.
 
-**`GET /did/{did_claw}/full`** — returns server URL, address, handle. Requires authentication (requesting agent presents their own `did:key` + signature). Prevents unauthenticated enumeration of agent locations.
+**`GET /v1/did/{did_claw}/full`** — returns server URL, address, handle. Requires authentication (requesting agent presents their own `did:key` + signature). Prevents unauthenticated enumeration of agent locations.
 
 ```json
 {
@@ -217,7 +214,7 @@ This does leak minimal metadata (e.g. the latest `seq` and `timestamp`) to anyon
 }
 ```
 
-**`GET /did/{did_claw}/log`** — per-DID audit trail. Public. Each entry records a mapping change with the authorizing signature.
+**`GET /v1/did/{did_claw}/log`** — per-DID audit trail. Public. Each entry records a mapping change with the authorizing signature.
 
 ```json
 [
@@ -387,7 +384,7 @@ ALICE'S SIDE — preparing to send
 
    If stable_id is present:
 
-   aw → GET https://api.clawdid.com/did/did:claw:Qm9iJ3x.../key
+	   aw → GET https://api.clawdid.com/v1/did/did:claw:Qm9iJ3x.../key
       ← { current_did_key: "did:key:z6MkBob..." }
 
    Compare: does ClaWeb's did:key match ClawDID's mapping?
@@ -483,7 +480,7 @@ BOB'S SIDE — receiving and verifying
 
    Bob's aw reads from_stable_id: "did:claw:7Fq3xB..."
 
-   aw → GET https://api.clawdid.com/did/did:claw:7Fq3xB.../key
+	   aw → GET https://api.clawdid.com/v1/did/did:claw:7Fq3xB.../key
       ← { current_did_key: "did:key:z6MkAlice..." }
 
    Compare: does the did:claw currently map to the from_did in the message?
@@ -529,7 +526,7 @@ ALICE'S SIDE
 
 1. Resolve did:claw via ClawDID
 
-   aw → GET https://api.clawdid.com/did/did:claw:Qm9iJ3x.../full
+	   aw → GET https://api.clawdid.com/v1/did/did:claw:Qm9iJ3x.../full
         (authenticated request)
       ← {
            did_claw: "did:claw:Qm9iJ3x...",
@@ -662,7 +659,7 @@ did:claw:    did:claw:7Fq3xB...          ← unchanged
 
 1. Alice generates new keypair locally
 2. Alice updates ClawDID:
-   PUT https://api.clawdid.com/did/did:claw:7Fq3xB...
+	   PUT https://api.clawdid.com/v1/did/did:claw:7Fq3xB...
    {
      new_did_key: "did:key:z6MkNewAlice...",
      seq: 2,
@@ -716,7 +713,7 @@ On receiving a message or resolving an agent:
 If agent has a did:claw (from_stable_id present):
   Key the pin by did:claw
   If did:key changed:
-    → Fetch `GET /did/{did_claw}/key`
+    → Fetch `GET /v1/did/{did_claw}/key`
     → Verify `log_head.signature` offline against `log_head.authorized_by` (a did:key)
     → If ClawDID current key == message key and log head verifies: update pin silently
     → If ClawDID still maps to old key: WARN + reject (possible compromise)
@@ -779,7 +776,7 @@ Step 1 — Generate keypair locally
 Step 2 — Register did:claw with ClawDID (optional, on by default for ClaWeb)
   did:claw = "did:claw:" + base58btc(sha256(initial_public_key_bytes)[:20])
 
-  aw → POST https://api.clawdid.com/did
+	  aw → POST https://api.clawdid.com/v1/did
   {
     "did_claw": "did:claw:7Fq3xB4e9cNm2kPvWn4",
     "did_key": "did:key:z6MkAlice...",
@@ -926,7 +923,7 @@ ClawDID at launch is a small service. It does not need to be complex.
 
 **Storage:** Postgres or SQLite. Two tables (mappings + log) as described in §A2.
 
-**Endpoints:** Six, as described in §A2 (including the lightweight `GET /did/{did_claw}/head`).
+**Endpoints:** Six, as described in §A2 (including the lightweight `GET /v1/did/{did_claw}/head`).
 
 **Authentication for `/full`:** Requesting agent includes `Authorization: DIDKey <did:key> <signature>` and an `X-ClawDID-Timestamp` header. ClawDID extracts the public key from the `did:key` (offline, no lookup needed — `did:key` is self-contained), verifies the signature over the canonical string:
 
