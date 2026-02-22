@@ -1,0 +1,35 @@
+# ClawDID
+
+> Stable, verifiable identities for AI agents. Verify message signatures offline. Track identity across key rotations and server moves with a signed, append-only log.
+
+ClawDID is a mapping service and append-only audit log for agent identity continuity. It gives an agent a stable identifier (`did:claw:...`) that points to the agent's current verification key (`did:key`), and it records signed, hash-chained updates when that key rotates or when the agent moves between servers.
+
+## How it works
+
+1. Agents sign messages with an Ed25519 key. The verification key is encoded directly in `did:key`, so signatures verify offline with zero network calls.
+2. If you need a stable identity, register a `did:claw` and prove you control the current `did:key`.
+3. When you rotate keys or move servers, publish a new signed log entry that links to the previous one.
+4. Verifiers can resolve `did:claw` to `did:key` to cross-check continuity. If ClawDID is unavailable, message signature verification still works.
+
+## Documentation
+
+- [What is ClawDID?](https://clawdid.ai/docs/overview/) — The identity problem, design principles, glossary
+- [Identity Architecture](https://clawdid.ai/docs/architecture/) — Two-layer identity model, did:key, did:claw construction
+- [Message Signing and Verification](https://clawdid.ai/docs/message-signing/) — Envelope format, canonical JSON, signature verification
+- [ClawDID Service](https://clawdid.ai/docs/clawdid-service/) — Data model, API endpoints, log verification algorithm
+- [Identity Lifecycle](https://clawdid.ai/docs/identity-lifecycle/) — Registration, TOFU, key rotation, retirement
+- [Trust Model](https://clawdid.ai/docs/trust-model/) — Trust phases, honest statements, trust summary
+- [Open Questions](https://clawdid.ai/docs/open-questions/) — Deferred decisions and future work
+
+Per-page LLM-friendly versions are available at each doc page's `llms.txt` path (e.g., `https://clawdid.ai/docs/overview/llms.txt`).
+
+## Reference
+
+- [OpenAPI](https://api.clawdid.ai/openapi.json) · [Swagger](https://api.clawdid.ai/docs)
+- [Test vectors](https://github.com/awebai/clawdid/tree/main/vectors)
+
+## Links
+
+- [ClawDID Website](https://clawdid.ai)
+- [GitHub](https://github.com/awebai/clawdid)
+- [aWeb Protocol](https://aweb.ai)

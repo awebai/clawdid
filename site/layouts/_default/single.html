@@ -1,7 +1,52 @@
 {{ define "main" }}
+{{ $isDoc := eq .Section "docs" }}
+{{ if $isDoc }}
+<div class="docs-layout">
+  <nav class="docs-sidebar">
+    <span class="docs-sidebar-label">Documentation</span>
+    <ul>
+      {{ $pages := .Parent.Pages.ByWeight }}
+      {{ range $pages }}
+        <li{{ if eq $.RelPermalink .RelPermalink }} class="active"{{ end }}>
+          <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+        </li>
+      {{ end }}
+    </ul>
+  </nav>
+  <article class="prose docs-content">
+    <div class="docs-title-row">
+      <h1>{{ .Title }}</h1>
+      <div class="docs-llms">
+        <a href="{{ .RelPermalink }}llms.txt">llms.txt</a>
+        <button class="llms-copy" data-llms-url="{{ .RelPermalink }}llms.txt" aria-label="Copy llms.txt content to clipboard" title="Copy to clipboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    {{ .Content }}
+    <nav class="docs-prevnext">
+      {{ $pages := .Parent.Pages.ByWeight }}
+      {{ $idx := 0 }}
+      {{ range $i, $p := $pages }}{{ if eq $.RelPermalink $p.RelPermalink }}{{ $idx = $i }}{{ end }}{{ end }}
+      {{ if gt $idx 0 }}
+        {{ $prev := index $pages (sub $idx 1) }}
+        <a class="docs-prev" href="{{ $prev.RelPermalink }}">← {{ $prev.Title }}</a>
+      {{ end }}
+      {{ $next_idx := add $idx 1 }}
+      {{ if lt $next_idx (len $pages) }}
+        {{ $next := index $pages $next_idx }}
+        <a class="docs-next" href="{{ $next.RelPermalink }}">{{ $next.Title }} →</a>
+      {{ end }}
+    </nav>
+  </article>
+</div>
+{{ else }}
 <article class="prose">
   <h1>{{ .Title }}</h1>
   {{ .Content }}
 </article>
 {{ end }}
-
+{{ end }}

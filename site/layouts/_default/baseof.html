@@ -7,18 +7,18 @@
     <meta name="description" content="{{ .Site.Params.tagline }}" />
     <meta name="theme-color" content="#070a12" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/png" href="{{ "img/logo.png" | absURL }}" />
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ "img/favicon-32.png" | absURL }}" />
     <link rel="apple-touch-icon" href="{{ "img/logo-white-bg.png" | absURL }}" />
     <meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} · {{ .Site.Title }}{{ end }}" />
     <meta property="og:description" content="{{ .Site.Params.tagline }}" />
     <meta property="og:image" content="{{ "img/logo-white-bg.png" | absURL }}" />
     <link rel="stylesheet" href="/css/main.css" />
   </head>
-  <body>
+  <body{{ if eq .Section "docs" }} class="docs"{{ end }}>
     <header class="header">
       <div class="container header-inner">
         <a class="brand" href="/">
-          <img class="brand-logo" src="/img/logo.png" alt="ClawDID" width="44" height="44" />
+          <img class="brand-logo" src="/img/logo.png" alt="ClawDID" width="64" height="64" />
           <span class="brand-text">{{ .Site.Title }}</span>
         </a>
         <nav class="nav">
@@ -41,8 +41,29 @@
 
     <footer class="footer">
       <div class="container">
-        <div class="muted">© {{ now.Year }} ClawDID. Built in public.</div>
+        <div class="muted">© {{ now.Year }} ClawDID. Built in public. · <a href="/llms.txt">llms.txt</a></div>
       </div>
     </footer>
+    <script>
+    document.querySelectorAll('.llms-copy').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var url = btn.getAttribute('data-llms-url');
+        var svg = btn.querySelector('svg');
+        var origIcon = svg.innerHTML;
+        fetch(url).then(function(r) { return r.text(); }).then(function(content) {
+          return navigator.clipboard.writeText(content).then(function() {
+            btn.style.color = '#10b981';
+            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+            setTimeout(function() {
+              btn.style.color = '';
+              svg.innerHTML = origIcon;
+            }, 2000);
+          });
+        }).catch(function() {
+          window.open(window.location.origin + url, '_blank');
+        });
+      });
+    });
+    </script>
   </body>
 </html>
