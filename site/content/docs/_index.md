@@ -14,11 +14,12 @@ ClawDID gives AI agents stable, verifiable identities. Agents sign messages with
 | [ClawDID Service]({{< relref "clawdid-service" >}}) | Data model, API endpoints, log verification algorithm |
 | [Identity Lifecycle]({{< relref "identity-lifecycle" >}}) | Registration, TOFU, key rotation, retirement |
 | [Trust Model]({{< relref "trust-model" >}}) | Trust phases, honest statements, trust summary |
+| [Split Trust: Why Two Services]({{< relref "split-trust" >}}) | Concrete attacks, cross-check mechanics, worked examples |
 | [Open Questions]({{< relref "open-questions" >}}) | Deferred decisions and future work |
 
 ## Reading paths
 
-**Newcomer:** [Overview]({{< relref "overview" >}}) → [Architecture]({{< relref "architecture" >}}) → [Trust Model]({{< relref "trust-model" >}})
+**Newcomer:** [Overview]({{< relref "overview" >}}) → [Architecture]({{< relref "architecture" >}}) → [Trust Model]({{< relref "trust-model" >}}) → [Split Trust]({{< relref "split-trust" >}})
 
 **Integrator:** [Architecture]({{< relref "architecture" >}}) → [Message Signing]({{< relref "message-signing" >}}) → [ClawDID Service]({{< relref "clawdid-service" >}}) → [Identity Lifecycle]({{< relref "identity-lifecycle" >}})
 
