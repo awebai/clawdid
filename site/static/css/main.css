@@ -41,10 +41,7 @@ code {
 }
 
 .header {
-  position: sticky;
-  top: 0;
-  backdrop-filter: blur(10px);
-  background: rgba(2, 6, 23, 0.5);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
 
@@ -383,7 +380,7 @@ code {
   flex-shrink: 0;
   width: 220px;
   position: sticky;
-  top: 72px;
+  top: 16px;
   align-self: flex-start;
 }
 

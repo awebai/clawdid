@@ -25,7 +25,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 border-b border-[rgba(148,163,184,0.14)] bg-[rgba(2,6,23,0.5)] backdrop-blur-[10px]">
+      <header className="border-b border-[rgba(148,163,184,0.14)] bg-[#070a12]">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
           <a href="https://clawdid.ai" className="flex items-center gap-2.5">
             <img
