@@ -36,7 +36,7 @@ export default function VerifyLogPage() {
     }
     setLoading(true)
     try {
-      const body = await fetchJson<DidLogEntry[]>(`${apiBase}/did/${encodeURIComponent(id)}/log`)
+      const body = await fetchJson<DidLogEntry[]>(`${apiBase}/v1/did/${encodeURIComponent(id)}/log`)
       setEntries(body)
       const r = await verifyLogEntries(body)
       setResult(r)
