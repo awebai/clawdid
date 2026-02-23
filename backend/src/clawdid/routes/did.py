@@ -502,6 +502,10 @@ async def update_mapping(
             raise HTTPException(status_code=404, detail="not found")
 
         previous_did_key = row["current_did_key"]
+        if req.operation == "rotate_key" and req.new_did_key == previous_did_key:
+            raise HTTPException(
+                status_code=400, detail="rotate_key requires a different did:key"
+            )
         if req.authorized_by != previous_did_key:
             raise HTTPException(
                 status_code=401, detail="authorized_by must be current did:key"

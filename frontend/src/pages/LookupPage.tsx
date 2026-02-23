@@ -165,7 +165,7 @@ export default function LookupPage() {
     }
     setLoading(true)
     try {
-      const body = await fetchJson<DidKeyResponse>(`${apiBase}/did/${encodeURIComponent(id)}/key`)
+      const body = await fetchJson<DidKeyResponse>(`${apiBase}/v1/did/${encodeURIComponent(id)}/key`)
       setResp(body)
       const cached = loadCache(id)
       const vr = await verifyKeyResponse(
