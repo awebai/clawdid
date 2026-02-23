@@ -23,14 +23,15 @@ class Settings(BaseSettings):
     database_pool_size: int = 10
     database_pool_overflow: int = 10
 
-    auth_timestamp_skew_seconds: int = 300
-
-    rate_limit_enabled: bool = Field(
-        default=False,
+    cors_allowed_origins: list[str] = Field(
+        default=["*"],
         validation_alias=AliasChoices(
-            "RATE_LIMIT_ENABLED", "CLAWDID_RATE_LIMIT_ENABLED"
+            "CORS_ALLOWED_ORIGINS", "CLAWDID_CORS_ALLOWED_ORIGINS"
         ),
     )
+
+    auth_timestamp_skew_seconds: int = 300
+
     rate_limit_backend: Literal["memory", "redis"] = Field(
         default="memory",
         validation_alias=AliasChoices(

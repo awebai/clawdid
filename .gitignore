@@ -1,6 +1,6 @@
 .beadhub
 .aw/
-.env
+.env*
 backend/.env
 backend/.venv
 backend/dist
