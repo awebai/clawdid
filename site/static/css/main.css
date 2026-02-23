@@ -145,14 +145,14 @@ code {
   padding: 10px 20px;
   border-radius: 12px;
   border: 1px solid rgba(232, 102, 60, 0.5);
-  background: #c4532a;
+  background: #ee7950;
   color: #ffffff;
   font-weight: 600;
 }
 
 .btn:hover {
   text-decoration: none;
-  background: #d45e32;
+  background: #f08a65;
 }
 
 .btn.disabled {

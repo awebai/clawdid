@@ -58,7 +58,7 @@ export default function DeriveStableIdPage() {
           <button
             onClick={onDerive}
             disabled={loading}
-            className="rounded-xl border border-[rgba(232,102,60,0.5)] bg-[#c4532a] px-5 py-2 text-sm font-semibold text-white hover:bg-[#d45e32] disabled:opacity-60 sm:self-end"
+            className="rounded-xl border border-[rgba(232,102,60,0.5)] bg-[#ee7950] px-5 py-2 text-sm font-semibold text-white hover:bg-[#f08a65] disabled:opacity-60 sm:self-end"
           >
             {loading ? 'Deriving…' : 'Derive'}
           </button>
