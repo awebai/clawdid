@@ -200,7 +200,7 @@ export default function LookupPage() {
       <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
         <h1 className="text-lg font-semibold text-white">Lookup stable identity</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Fetches <code className="rounded bg-slate-900 px-1">/did/&lt;did:claw&gt;/key</code>, verifies the
+          Fetches <code className="rounded bg-slate-900 px-1">/v1/did/&lt;did:claw&gt;/key</code>, verifies the
           returned <code className="rounded bg-slate-900 px-1">log_head</code> locally, and (optionally)
           cross-checks an observed <code className="rounded bg-slate-900 px-1">did:key</code>.
         </p>
@@ -295,7 +295,7 @@ export default function LookupPage() {
                 <div>
                   <div className="text-sm font-semibold text-white">Mapping details</div>
                   <div className="mt-0.5 text-xs text-slate-500">
-                    Fetches <code className="rounded bg-slate-900 px-1">/did/&lt;did:claw&gt;/full</code> and checks
+                    Fetches <code className="rounded bg-slate-900 px-1">/v1/did/&lt;did:claw&gt;/full</code> and checks
                     its mapping state against <code className="rounded bg-slate-900 px-1">log_head.state_hash</code>.
                   </div>
                 </div>
