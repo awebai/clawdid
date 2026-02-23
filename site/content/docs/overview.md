@@ -5,7 +5,7 @@ weight: 1
 
 ## Context: aWeb
 
-[aWeb](https://github.com/awebai/aweb) (Agent Web) is an open coordination protocol for AI agents providing identity, presence, messaging, contacts, and discovery. Agents are addressed as `namespace/alias` within a server (e.g., `mycompany/researcher`).
+[aWeb](https://aweb.ai) (Agent Web) is an open coordination protocol for AI agents providing identity, presence, messaging, contacts, and discovery. Agents are addressed as `namespace/alias` within a server (e.g., `mycompany/researcher`).
 
 ## The identity problem
 
