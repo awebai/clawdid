@@ -41,6 +41,9 @@ def _parse_rfc3339(ts: str) -> datetime:
     dt = datetime.fromisoformat(ts)
     if dt.tzinfo is None:
         raise ValueError("timestamp must include timezone offset (e.g. Z or +00:00)")
+    if dt.microsecond != 0:
+        # SOT requires second precision to avoid cross-implementation drift.
+        raise ValueError("timestamp must be second precision (no fractional seconds)")
     return dt.astimezone(timezone.utc)
 
 
@@ -466,7 +469,10 @@ async def get_log(
     ]
 
 
-@router.put("/{did_claw}")
+@router.put(
+    "/{did_claw}",
+    dependencies=[Depends(rate_limit_dep("did_update"))],
+)
 async def update_mapping(
     did_claw: str,
     req: DidUpdateRequest,

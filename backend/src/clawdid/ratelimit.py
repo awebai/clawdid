@@ -152,6 +152,8 @@ def _rate_config(bucket: str) -> tuple[int, int]:
         return settings.rate_limit_head_per_minute, 60
     if bucket == "did_register":
         return settings.rate_limit_register_per_hour, 3600
+    if bucket == "did_update":
+        return settings.rate_limit_update_per_hour, 3600
     if bucket == "did_full":
         return settings.rate_limit_full_per_minute, 60
     raise ValueError("unknown rate limit bucket")

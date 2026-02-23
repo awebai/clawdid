@@ -4,6 +4,7 @@ import base64
 
 from nacl.signing import SigningKey
 
+from clawdid.routes.did import _parse_rfc3339
 from clawdid.signing import canonical_json_bytes, verify_did_key_signature
 
 
@@ -15,3 +16,11 @@ def test_verify_did_key_signature_ok():
     payload = canonical_json_bytes({"a": 1, "b": "x"})
     sig = base64.b64encode(sk.sign(payload).signature).rstrip(b"=").decode("ascii")
     verify_did_key_signature(did_key=did_key, payload=payload, signature_b64=sig)
+
+
+def test_parse_rfc3339_rejects_fractional_seconds():
+    try:
+        _parse_rfc3339("2026-02-22T10:00:00.123Z")
+        assert False, "expected ValueError"
+    except ValueError:
+        pass

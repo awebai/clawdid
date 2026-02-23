@@ -7,6 +7,7 @@ import base58
 _DID_KEY_PREFIX = "did:key:z"
 _DID_CLAW_PREFIX = "did:claw:"
 _DID_AW_PREFIX = "did:aw:"
+_STABLE_ID_SUFFIX_BYTES = 20
 
 _MULTICODEC_ED25519 = b"\xed\x01"
 
@@ -36,6 +37,7 @@ def did_claw_from_public_key(public_key: bytes, *, method: str = "claw") -> str:
 
 
 def stable_method_from_id(stable_id: str) -> str:
+    stable_id = (stable_id or "").strip()
     if stable_id.startswith(_DID_CLAW_PREFIX):
         return "claw"
     if stable_id.startswith(_DID_AW_PREFIX):
@@ -44,6 +46,19 @@ def stable_method_from_id(stable_id: str) -> str:
 
 
 def validate_stable_id(stable_id: str) -> None:
-    if stable_id.startswith(_DID_CLAW_PREFIX) or stable_id.startswith(_DID_AW_PREFIX):
-        return
-    raise ValueError("stable_id must start with did:claw: or did:aw:")
+    stable_id = (stable_id or "").strip()
+    method = stable_method_from_id(stable_id)
+    prefix = _DID_CLAW_PREFIX if method == "claw" else _DID_AW_PREFIX
+    suffix = stable_id[len(prefix) :].strip()
+    if not suffix:
+        raise ValueError("stable_id suffix must be non-empty")
+    if len(suffix) > 64:
+        raise ValueError("stable_id suffix is too long")
+    try:
+        decoded = base58.b58decode(suffix)
+    except Exception as exc:
+        raise ValueError("stable_id suffix must be base58btc") from exc
+    if len(decoded) != _STABLE_ID_SUFFIX_BYTES:
+        raise ValueError(
+            f"stable_id suffix must decode to {_STABLE_ID_SUFFIX_BYTES} bytes"
+        )

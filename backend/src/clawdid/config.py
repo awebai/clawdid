@@ -69,6 +69,12 @@ class Settings(BaseSettings):
             "RATE_LIMIT_REGISTER_PER_HOUR", "CLAWDID_RATE_LIMIT_REGISTER_PER_HOUR"
         ),
     )
+    rate_limit_update_per_hour: int = Field(
+        default=30,
+        validation_alias=AliasChoices(
+            "RATE_LIMIT_UPDATE_PER_HOUR", "CLAWDID_RATE_LIMIT_UPDATE_PER_HOUR"
+        ),
+    )
     rate_limit_full_per_minute: int = Field(
         default=30,
         validation_alias=AliasChoices(
