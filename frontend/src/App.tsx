@@ -1,4 +1,4 @@
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import LookupPage from './pages/LookupPage'
 import VerifyLogPage from './pages/VerifyLogPage'
 import DeriveStableIdPage from './pages/DeriveStableIdPage'
@@ -27,7 +27,7 @@ export default function App() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b border-[rgba(148,163,184,0.14)] bg-[rgba(2,6,23,0.5)] backdrop-blur-[10px]">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
-          <Link to="/" className="flex items-center gap-2.5">
+          <a href="https://clawdid.ai" className="flex items-center gap-2.5">
             <img
               src="/logo.png"
               alt="ClawDID"
@@ -36,7 +36,7 @@ export default function App() {
               className="rounded-[14px]"
             />
             <span className="text-[26px] font-bold text-white">ClawDID</span>
-          </Link>
+          </a>
           <nav className="hidden items-center gap-1 text-sm sm:flex">
             {navItems.map((item) => (
               <NavLink
