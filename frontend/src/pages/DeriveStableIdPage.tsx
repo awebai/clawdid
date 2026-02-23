@@ -31,17 +31,17 @@ export default function DeriveStableIdPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
+      <div className="rounded-2xl border border-[rgba(148,163,184,0.14)] bg-[rgba(8,14,30,0.65)] p-5">
         <h1 className="text-lg font-semibold text-white">Derive stable ID</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Computes <code className="rounded bg-slate-900 px-1">did:claw</code> and{' '}
-          <code className="rounded bg-slate-900 px-1">did:aw</code> from the Ed25519 public key embedded in a{' '}
-          <code className="rounded bg-slate-900 px-1">did:key</code>.
+        <p className="mt-1 text-sm text-slate-300">
+          Computes <code className="rounded bg-slate-800/80 px-1.5 py-0.5 text-slate-200">did:claw</code> and{' '}
+          <code className="rounded bg-slate-800/80 px-1.5 py-0.5 text-slate-200">did:aw</code> from the Ed25519 public key embedded in a{' '}
+          <code className="rounded bg-slate-800/80 px-1.5 py-0.5 text-slate-200">did:key</code>.
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <div className="w-full sm:flex-1">
-            <label htmlFor={didKeyInputId} className="mb-1 block text-xs text-slate-500">
+            <label htmlFor={didKeyInputId} className="mb-1 block text-xs text-slate-400">
               did:key
             </label>
             <input
@@ -49,7 +49,7 @@ export default function DeriveStableIdPage() {
               value={didKey}
               onChange={(e) => setDidKey(e.target.value)}
               placeholder="did:key:z..."
-              className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full rounded-xl border border-[rgba(148,163,184,0.2)] bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-[rgba(232,102,60,0.4)]"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') void onDerive()
               }}
@@ -58,7 +58,7 @@ export default function DeriveStableIdPage() {
           <button
             onClick={onDerive}
             disabled={loading}
-            className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-60"
+            className="rounded-xl border border-[rgba(232,102,60,0.5)] bg-[#c4532a] px-5 py-2 text-sm font-semibold text-white hover:bg-[#d45e32] disabled:opacity-60 sm:self-end"
           >
             {loading ? 'Deriving…' : 'Derive'}
           </button>
@@ -73,10 +73,10 @@ export default function DeriveStableIdPage() {
 
       {(stableClaw || stableAw) && (
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
+          <div className="rounded-2xl border border-[rgba(148,163,184,0.14)] bg-[rgba(8,14,30,0.65)] p-5">
             {stableClaw ? <CopyableValue label="did:claw" value={stableClaw} /> : null}
           </div>
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
+          <div className="rounded-2xl border border-[rgba(148,163,184,0.14)] bg-[rgba(8,14,30,0.65)] p-5">
             {stableAw ? <CopyableValue label="did:aw" value={stableAw} /> : null}
           </div>
         </div>

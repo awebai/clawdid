@@ -49,16 +49,16 @@ export default function VerifyLogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
+      <div className="rounded-2xl border border-[rgba(148,163,184,0.14)] bg-[rgba(8,14,30,0.65)] p-5">
         <h1 className="text-lg font-semibold text-white">Verify audit log</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Fetches <code className="rounded bg-slate-900 px-1">/v1/did/&lt;did:claw&gt;/log</code> and verifies each
+        <p className="mt-1 text-sm text-slate-300">
+          Fetches <code className="rounded bg-slate-800/80 px-1.5 py-0.5 text-slate-200">/v1/did/&lt;did:claw&gt;/log</code> and verifies each
           entry hash, signature, and the hash chain.
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <div className="w-full sm:flex-1">
-            <label htmlFor={didInputId} className="mb-1 block text-xs text-slate-500">
+            <label htmlFor={didInputId} className="mb-1 block text-xs text-slate-400">
               Stable ID
             </label>
             <input
@@ -66,7 +66,7 @@ export default function VerifyLogPage() {
               value={didClaw}
               onChange={(e) => setDidClaw(e.target.value)}
               placeholder="did:claw:..."
-              className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full rounded-xl border border-[rgba(148,163,184,0.2)] bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-[rgba(232,102,60,0.4)]"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') void onVerify()
               }}
@@ -75,7 +75,7 @@ export default function VerifyLogPage() {
           <button
             onClick={onVerify}
             disabled={loading}
-            className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-60"
+            className="rounded-xl border border-[rgba(232,102,60,0.5)] bg-[#c4532a] px-5 py-2 text-sm font-semibold text-white hover:bg-[#d45e32] disabled:opacity-60 sm:self-end"
           >
             {loading ? 'Verifying…' : 'Verify'}
           </button>
@@ -89,7 +89,7 @@ export default function VerifyLogPage() {
 
         {result && (
           <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-slate-300">
+            <div className="text-sm text-slate-200">
               Entries: <span className="font-mono">{entries?.length ?? 0}</span>
             </div>
             <StatusPill ok={result.ok} />
@@ -106,7 +106,7 @@ export default function VerifyLogPage() {
       </div>
 
       {entries && (
-        <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
+        <div className="rounded-2xl border border-[rgba(148,163,184,0.14)] bg-[rgba(8,14,30,0.65)] p-5">
           <h2 className="text-sm font-semibold text-white">Entries</h2>
           <pre className="mt-3 max-h-[520px] overflow-auto rounded-xl bg-slate-950/70 p-3 text-xs text-slate-200">
             {JSON.stringify(entries, null, 2)}
