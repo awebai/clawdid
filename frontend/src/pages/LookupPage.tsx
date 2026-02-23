@@ -3,8 +3,11 @@ import CopyableValue from '../components/CopyableValue'
 import { apiBaseUrl } from '../lib/config'
 import { fetchJson } from '../lib/http'
 import { verifyKeyResponse, type DidKeyResponse } from '../lib/clawdid'
-import { didKeyToEd25519PublicKey } from '../lib/did'
+import { didKeyToEd25519PublicKey, ed25519PublicKeyToDidKey } from '../lib/did'
 import { isStableId } from '../lib/stable'
+import { bytesToBase64RawStdNoPad } from '../lib/encoding'
+import nacl from 'tweetnacl'
+import { canonicalJsonFlatObject, sha256Hex, utf8Bytes } from '../lib/jcs'
 
 type CacheEntry = { seq: number; entry_hash: string }
 
@@ -46,6 +49,22 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
+type DidFullResponse = {
+  did_claw: string
+  current_did_key: string
+  server: string
+  address: string
+  handle: string | null
+  created_at: string
+  updated_at: string
+}
+
+const STATE_KEYS = ['address', 'current_did_key', 'did_claw', 'handle', 'server'] as const
+
+function nowRfc3339SecondsZ(): string {
+  return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
 export default function LookupPage() {
   const apiBase = useMemo(() => apiBaseUrl(), [])
   const [didClaw, setDidClaw] = useState('')
@@ -57,8 +76,68 @@ export default function LookupPage() {
     Awaited<ReturnType<typeof verifyKeyResponse>> | null
   >(null)
   const [crossCheckError, setCrossCheckError] = useState<string | null>(null)
+  const [fullLoading, setFullLoading] = useState(false)
+  const [fullError, setFullError] = useState<string | null>(null)
+  const [fullResp, setFullResp] = useState<DidFullResponse | null>(null)
+  const [stateHash, setStateHash] = useState<string | null>(null)
+  const [stateHashStatus, setStateHashStatus] = useState<'PASS' | 'FAIL' | 'DEGRADED' | null>(
+    null,
+  )
   const didInputId = 'did-claw'
   const didKeyInputId = 'did-key'
+
+  async function fetchFull(id: string) {
+    setFullError(null)
+    setFullResp(null)
+    setStateHash(null)
+    setStateHashStatus(null)
+
+    setFullLoading(true)
+    try {
+      const keypair = nacl.sign.keyPair()
+      const authDidKey = ed25519PublicKeyToDidKey(keypair.publicKey)
+
+      const ts = nowRfc3339SecondsZ()
+      const path = `/v1/did/${encodeURIComponent(id)}/full`
+      const signingPayload = utf8Bytes(`${ts}\nGET\n${path}`)
+      const sigBytes = nacl.sign.detached(signingPayload, keypair.secretKey)
+      const sigB64 = bytesToBase64RawStdNoPad(sigBytes)
+
+      const body = await fetchJson<DidFullResponse>(`${apiBase}${path}`, {
+        headers: {
+          Authorization: `DIDKey ${authDidKey} ${sigB64}`,
+          'X-ClawDID-Timestamp': ts,
+        },
+      })
+      setFullResp(body)
+
+      const stateObj: Record<string, unknown> = {
+        address: body.address,
+        current_did_key: body.current_did_key,
+        did_claw: body.did_claw,
+        handle: body.handle,
+        server: body.server,
+      }
+      const canonical = canonicalJsonFlatObject(stateObj, [...STATE_KEYS] as unknown as string[])
+      const computed = await sha256Hex(utf8Bytes(canonical))
+      setStateHash(computed)
+
+      const head = resp?.log_head ?? null
+      if (!head) {
+        setStateHashStatus('DEGRADED')
+        return
+      }
+      if (computed !== head.state_hash) {
+        setStateHashStatus('FAIL')
+        return
+      }
+      setStateHashStatus('PASS')
+    } catch (e) {
+      setFullError((e as Error).message)
+    } finally {
+      setFullLoading(false)
+    }
+  }
 
   async function onLookup() {
     const id = didClaw.trim()
@@ -67,6 +146,10 @@ export default function LookupPage() {
     setResp(null)
     setVerification(null)
     setCrossCheckError(null)
+    setFullError(null)
+    setFullResp(null)
+    setStateHash(null)
+    setStateHashStatus(null)
     if (!id) return
     if (!isStableId(id)) {
       setError('Stable ID must start with did:claw: or did:aw:.')
@@ -206,6 +289,56 @@ export default function LookupPage() {
                 Split-trust cross-check: observed did:key matches.
               </div>
             )}
+
+            <div className="mt-5 border-t border-slate-800/70 pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-white">Mapping details</div>
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    Fetches <code className="rounded bg-slate-900 px-1">/did/&lt;did:claw&gt;/full</code> and checks
+                    its mapping state against <code className="rounded bg-slate-900 px-1">log_head.state_hash</code>.
+                  </div>
+                </div>
+                <button
+                  onClick={() => void fetchFull(resp?.did_claw || didClaw.trim())}
+                  disabled={fullLoading || !resp}
+                  className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800/40 disabled:opacity-60"
+                >
+                  {fullLoading ? 'Fetching…' : 'Fetch /full'}
+                </button>
+              </div>
+
+              {fullError && (
+                <div className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+                  {fullError}
+                </div>
+              )}
+
+              {fullResp && (
+                <div className="mt-3 space-y-2 text-sm">
+                  <CopyableValue label="server" value={fullResp.server} />
+                  <CopyableValue label="address" value={fullResp.address} />
+                  {fullResp.handle ? <CopyableValue label="handle" value={fullResp.handle} /> : null}
+                  {stateHash ? <CopyableValue label="computed_state_hash" value={stateHash} /> : null}
+                  {resp?.log_head?.state_hash ? (
+                    <CopyableValue label="log_head.state_hash" value={resp.log_head.state_hash} />
+                  ) : null}
+
+                  {stateHashStatus === 'PASS' ? (
+                    <div className="text-sm text-emerald-200">State hash matches log head commitment.</div>
+                  ) : stateHashStatus === 'FAIL' ? (
+                    <div className="text-sm text-rose-200">
+                      State hash does not match log head commitment. Refetch <code>/key</code> and <code>/full</code>
+                      (mapping may have changed), or treat as security relevant.
+                    </div>
+                  ) : stateHashStatus === 'DEGRADED' ? (
+                    <div className="text-sm text-amber-200">
+                      Cannot verify state hash (missing <code>log_head</code>).
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">

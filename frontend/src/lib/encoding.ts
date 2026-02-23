@@ -7,6 +7,12 @@ export function base64ToBytesRawStdNoPad(b64NoPad: string): Uint8Array {
   return out
 }
 
+export function bytesToBase64RawStdNoPad(bytes: Uint8Array): string {
+  let bin = ''
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+  return btoa(bin).replace(/=+$/g, '')
+}
+
 export function bytesToHex(bytes: Uint8Array): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
@@ -14,4 +20,3 @@ export function bytesToHex(bytes: Uint8Array): string {
 export function isLowerHex(s: string): boolean {
   return /^[0-9a-f]+$/.test(s)
 }
-
