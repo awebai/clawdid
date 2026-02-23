@@ -57,6 +57,12 @@ For multi-instance deploys:
 - `RATE_LIMIT_BACKEND=redis` and `RATE_LIMIT_REDIS_URL=redis://...`
 - If you already have a WAF (Cloudflare/Render/ALB), prefer edge rate limiting and keep app-level limits as a backstop.
 
+## Database
+
+Render Postgres provides daily automatic backups. RPO assumption: up to 24 hours of identity registrations/rotations may be lost on full DB failure. RTO: create a new Render Postgres instance, restore from backup, update `DATABASE_URL`, redeploy — migrations auto-apply on startup.
+
+For horizontal scaling: total Postgres connections = `pool_size × instances`. Monitor and adjust pool size or use PgBouncer if needed.
+
 ## Frontend (SPA) Build
 
 The SPA is a static Vite build deployed separately (e.g. at `app.clawdid.ai`).
