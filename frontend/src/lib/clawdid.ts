@@ -139,8 +139,11 @@ export async function verifyKeyResponse(
     if (head.seq === cache.cached_seq && head.entry_hash !== cache.cached_entry_hash) {
       return { status: 'HARD_ERROR', reason: 'split view: same seq, different entry_hash', canonical_payload }
     }
-    if (head.seq > cache.cached_seq && head.prev_entry_hash !== cache.cached_entry_hash) {
+    if (head.seq === cache.cached_seq + 1 && head.prev_entry_hash !== cache.cached_entry_hash) {
       return { status: 'HARD_ERROR', reason: 'broken chain: prev_entry_hash != cached entry_hash', canonical_payload }
+    }
+    if (head.seq > cache.cached_seq + 1) {
+      return { status: 'OK_DEGRADED', reason: 'seq gap: fetch /log to verify full chain' }
     }
   }
 

@@ -36,7 +36,7 @@ export default function VerifyLogPage() {
     }
     setLoading(true)
     try {
-      const body = await fetchJson<DidLogEntry[]>(`${apiBase}/did/${encodeURIComponent(id)}/log`)
+      const body = await fetchJson<DidLogEntry[]>(`${apiBase}/v1/did/${encodeURIComponent(id)}/log`)
       setEntries(body)
       const r = await verifyLogEntries(body)
       setResult(r)
@@ -52,7 +52,7 @@ export default function VerifyLogPage() {
       <div className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5">
         <h1 className="text-lg font-semibold text-white">Verify audit log</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Fetches <code className="rounded bg-slate-900 px-1">/did/&lt;did:claw&gt;/log</code> and verifies each
+          Fetches <code className="rounded bg-slate-900 px-1">/v1/did/&lt;did:claw&gt;/log</code> and verifies each
           entry hash, signature, and the hash chain.
         </p>
 

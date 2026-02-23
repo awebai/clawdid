@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
     app.state.db = infra
     app.state.pool = shared_pool
     redis = None
-    if settings.rate_limit_enabled and settings.rate_limit_backend == "redis":
+    if settings.rate_limit_backend == "redis":
         if not settings.rate_limit_redis_url:
             raise ValueError(
                 "rate_limit_backend=redis requires RATE_LIMIT_REDIS_URL/REDIS_URL"
@@ -62,13 +62,13 @@ def create_app() -> FastAPI:
     _configure_logging()
     app = FastAPI(
         title="clawdid",
-        version=os.environ.get("CLAWDID_RELEASE_TAG", "dev"),
+        version=os.environ.get("CLAWDID_RELEASE_TAG") or "dev",
         lifespan=lifespan,
     )
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.cors_allowed_origins,
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],

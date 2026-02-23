@@ -36,17 +36,6 @@ class RateLimiter:
         raise NotImplementedError
 
 
-class NoopRateLimiter(RateLimiter):
-    async def hit(
-        self, *, bucket: str, key: str, limit: int, window_seconds: int
-    ) -> RateLimitDecision:
-        now = int(time.time())
-        reset = now + window_seconds
-        return RateLimitDecision(
-            allowed=True, limit=limit, remaining=limit, reset_epoch_seconds=reset
-        )
-
-
 class MemoryFixedWindowRateLimiter(RateLimiter):
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
@@ -132,15 +121,11 @@ def _extract_client_ip(request: Request) -> str:
 
 
 def build_rate_limiter(*, redis=None) -> RateLimiter:
-    if not settings.rate_limit_enabled:
-        return NoopRateLimiter()
-    if settings.rate_limit_backend == "memory":
-        return MemoryFixedWindowRateLimiter()
     if settings.rate_limit_backend == "redis":
         if redis is None:
             raise ValueError("rate_limit_backend=redis requires a Redis client")
         return RedisFixedWindowRateLimiter(redis=redis)
-    raise ValueError("unsupported rate_limit_backend")
+    return MemoryFixedWindowRateLimiter()
 
 
 def _rate_config(bucket: str) -> tuple[int, int]:
@@ -152,6 +137,8 @@ def _rate_config(bucket: str) -> tuple[int, int]:
         return settings.rate_limit_head_per_minute, 60
     if bucket == "did_register":
         return settings.rate_limit_register_per_hour, 3600
+    if bucket == "did_update":
+        return settings.rate_limit_update_per_hour, 3600
     if bucket == "did_full":
         return settings.rate_limit_full_per_minute, 60
     raise ValueError("unknown rate limit bucket")
@@ -180,7 +167,7 @@ def ip_bucket_key(request: Request) -> str:
 async def get_rate_limiter(request: Request) -> RateLimiter:
     limiter = getattr(request.app.state, "rate_limiter", None)
     if limiter is None:
-        return NoopRateLimiter()
+        raise RuntimeError("rate_limiter not initialized on app.state")
     return limiter
 
 

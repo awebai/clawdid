@@ -10,7 +10,7 @@ This document describes how to deploy, verify, observe, and debug `clawdid` in p
 - **Image registry**
   - GHCR: `ghcr.io/awebai/clawdid`
 - **Host**
-  - Render Web Service (image-based deploy) via `render.yaml`
+  - Render Web Service (image-based deploy)
 
 ## Required Endpoints (Ops Contract)
 
@@ -19,13 +19,13 @@ This document describes how to deploy, verify, observe, and debug `clawdid` in p
   - Does not check Postgres.
 - `GET /ready`
   - `200` only if Postgres is reachable.
-  - Used as the Render health check.
+  - Used as the health check.
 - `GET /health`
   - Human-friendly status summary; includes dependency statuses and build identity.
 - `GET /meta`
   - Lightweight public build metadata.
 - `GET /api/v1/release` (no auth)
-  - Source of truth for “what is running”; includes build identity.
+  - Source of truth for "what is running"; includes build identity.
 
 ## Verify A Deploy (No Guessing)
 
@@ -50,8 +50,29 @@ Recommended:
 - `LOG_JSON=true`
 - `LOG_LEVEL=INFO`
 - `TRUST_PROXY_HEADERS=true`
+- `CORS_ALLOWED_ORIGINS=["https://app.clawdid.ai","https://clawdid.ai"]`
 
-Rate limiting (recommended for public deploys):
-- `RATE_LIMIT_ENABLED=true`
-- `RATE_LIMIT_BACKEND=redis` and `RATE_LIMIT_REDIS_URL=redis://...` (recommended for multi-instance)
+Rate limiting is always active. Backend defaults to in-memory (single instance).
+For multi-instance deploys:
+- `RATE_LIMIT_BACKEND=redis` and `RATE_LIMIT_REDIS_URL=redis://...`
 - If you already have a WAF (Cloudflare/Render/ALB), prefer edge rate limiting and keep app-level limits as a backstop.
+
+## Database
+
+Render Postgres provides daily automatic backups. RPO assumption: up to 24 hours of identity registrations/rotations may be lost on full DB failure. RTO: create a new Render Postgres instance, restore from backup, update `DATABASE_URL`, redeploy — migrations auto-apply on startup.
+
+For horizontal scaling: total Postgres connections = `pool_size × instances`. Monitor and adjust pool size or use PgBouncer if needed.
+
+## Frontend (SPA) Build
+
+The SPA is a static Vite build deployed separately (e.g. at `app.clawdid.ai`).
+
+Build for production:
+```
+cd frontend
+VITE_CLAWDID_API_BASE=https://api.clawdid.ai npm run build
+```
+
+Output goes to `frontend/dist/`. Deploy as static files.
+
+If `VITE_CLAWDID_API_BASE` is not set, the SPA defaults to `http://127.0.0.1:18111` (local dev).

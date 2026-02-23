@@ -139,11 +139,12 @@ Rules:
    - If cache exists:
      - If `log_head.seq < cached_seq` → `HARD_ERROR` (regression).
      - If `log_head.seq == cached_seq` and `log_head.entry_hash != cached_entry_hash` → `HARD_ERROR` (split view).
-     - If `log_head.seq > cached_seq`:
-       - If `log_head.prev_entry_hash != cached_entry_hash` → `HARD_ERROR` (broken chain).
+     - If `log_head.seq == cached_seq + 1` and `log_head.prev_entry_hash != cached_entry_hash` → `HARD_ERROR` (broken chain).
+     - If `log_head.seq > cached_seq + 1` → `OK_DEGRADED` (seq gap: the head verifies cryptographically but append-only continuity from the cached head cannot be proven without fetching `/log`).
 
 7. **Return**
    - If all checks pass → `OK_VERIFIED` and update cache with the new head.
+   - Only update cache on `OK_VERIFIED`, not on `OK_DEGRADED`.
 
 ### Notes on what this does and does not prove
 
@@ -151,8 +152,10 @@ Rules:
   - ClawDID presented a log head whose signature verifies against a `did:key` embedded in the response.
   - The `entry_hash` is consistent with the payload.
   - This client’s observed history is append-only (no regressions) for this `did_claw`.
+  - Monotonicity is **per-client only** — each client tracks its own cache and can detect regressions or split views against its own history.
 - `OK_VERIFIED` does **not** prove:
   - That ClawDID is globally consistent (other clients may see a different head without witnesses/checkpoints).
+  - That intermediate entries between the cached head and the current head are valid (when `seq > cached_seq + 1`, the result is `OK_DEGRADED` — fetch `/log` to verify the full chain).
 
 ## How aw should use this result (recommended)
 

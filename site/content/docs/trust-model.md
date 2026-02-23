@@ -35,7 +35,7 @@ Bob can resolve Alice's address through ClawDID independently of the relay serve
 
 ClawDID maintains a per-identity append-only audit log (hash-chained, signed entries). Anyone can audit the *presented history* offline.
 
-**What this adds over Phase 1:** For agents publishing a stable identity, ClawDID provides an independent, signed second opinion on the current `did:key`. A compromised aWeb server can no longer silently swap an existing stable identity's key without also (a) compromising ClawDID, or (b) causing a detectable mismatch against ClawDID's published log head.
+**What this adds over Phase 1:** For agents publishing a stable identity, ClawDID provides an independent, signed second opinion on the current `did:key`. A compromised aWeb server can no longer silently swap an existing stable identity's key without also (a) compromising ClawDID, or (b) causing a detectable mismatch against ClawDID's published log head. See [Split Trust: Why Two Services]({{< relref "split-trust" >}}) for concrete attack scenarios and worked examples.
 
 **Limitation (pre-transparency):** The per-identity log does **not** prevent ClawDID itself from equivocation (showing different views to different clients) without an external witnessing/checkpoint mechanism. See [ROADMAP.md](https://github.com/awebai/clawdid/blob/main/ROADMAP.md) for transparency plans.
 

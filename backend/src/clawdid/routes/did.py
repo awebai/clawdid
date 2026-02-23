@@ -41,6 +41,9 @@ def _parse_rfc3339(ts: str) -> datetime:
     dt = datetime.fromisoformat(ts)
     if dt.tzinfo is None:
         raise ValueError("timestamp must include timezone offset (e.g. Z or +00:00)")
+    if dt.microsecond != 0:
+        # SOT requires second precision to avoid cross-implementation drift.
+        raise ValueError("timestamp must be second precision (no fractional seconds)")
     return dt.astimezone(timezone.utc)
 
 
@@ -466,7 +469,10 @@ async def get_log(
     ]
 
 
-@router.put("/{did_claw}")
+@router.put(
+    "/{did_claw}",
+    dependencies=[Depends(rate_limit_dep("did_update"))],
+)
 async def update_mapping(
     did_claw: str,
     req: DidUpdateRequest,
@@ -477,7 +483,11 @@ async def update_mapping(
         _enforce_timestamp_skew(req.timestamp)
         # Ensure the new key is a syntactically valid did:key (Ed25519).
         public_key_from_did_key(req.new_did_key)
-        if req.server is not None:
+        if req.operation == "update_server":
+            if req.server is None:
+                raise ValueError("update_server requires a server URL")
+            _require_canonical_server_origin(req.server)
+        elif req.server is not None:
             _require_canonical_server_origin(req.server)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -496,6 +506,14 @@ async def update_mapping(
             raise HTTPException(status_code=404, detail="not found")
 
         previous_did_key = row["current_did_key"]
+        if req.operation == "rotate_key" and req.new_did_key == previous_did_key:
+            raise HTTPException(
+                status_code=400, detail="rotate_key requires a different did:key"
+            )
+        if req.operation == "update_server" and req.new_did_key != previous_did_key:
+            raise HTTPException(
+                status_code=400, detail="update_server must not change did:key"
+            )
         if req.authorized_by != previous_did_key:
             raise HTTPException(
                 status_code=401, detail="authorized_by must be current did:key"
@@ -522,13 +540,15 @@ async def update_mapping(
             raise HTTPException(status_code=409, detail="prev_entry_hash mismatch")
 
         try:
-            server_url = _require_canonical_server_origin(
-                req.server or row["server_url"]
-            )
+            if req.operation == "update_server":
+                assert req.server is not None  # validated above
+                server_url = _require_canonical_server_origin(req.server)
+            else:
+                server_url = _require_canonical_server_origin(row["server_url"])
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e)) from e
-        address = req.address or row["address"]
-        handle = req.handle if req.handle is not None else row["handle"]
+        address = row["address"]
+        handle = row["handle"]
 
         state_hash = _state_hash(
             did_claw=did_claw,
