@@ -142,6 +142,9 @@ export async function verifyKeyResponse(
     if (head.seq === cache.cached_seq + 1 && head.prev_entry_hash !== cache.cached_entry_hash) {
       return { status: 'HARD_ERROR', reason: 'broken chain: prev_entry_hash != cached entry_hash', canonical_payload }
     }
+    if (head.seq > cache.cached_seq + 1) {
+      return { status: 'OK_DEGRADED', reason: 'seq gap: fetch /log to verify full chain' }
+    }
   }
 
   return { status: 'OK_VERIFIED', canonical_payload, computed_entry_hash }

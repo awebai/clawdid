@@ -113,7 +113,7 @@ Compare this to Phase 1 without ClawDID, where Bob would see a bare TOFU warning
 
 Split trust makes identity forging require two independent compromises instead of one. It does not provide:
 
-**Global consistency.** ClawDID maintains a per-identity hash-chained log, but without external witnesses or checkpoints, it could theoretically show different log histories to different clients (equivocation). A client can verify that *its own* observed history is append-only, but cannot prove that other clients see the same history.
+**Global consistency.** ClawDID maintains a per-identity hash-chained log, but without external witnesses or checkpoints, it could theoretically show different log histories to different clients (equivocation). A client can verify that *its own* observed history is append-only (per-client monotonicity), but cannot prove that other clients see the same history. The `OK_VERIFIED` result from the [verification algorithm]({{< relref "clawdid-service" >}}) means "this client's view is consistent" — not "all clients agree."
 
 **First-contact bootstrapping.** If both the relay server and ClawDID are compromised (or if ClawDID is unreachable), the first introduction is still unprotected. Split trust improves continuity, not bootstrapping.
 
