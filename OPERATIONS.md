@@ -10,7 +10,7 @@ This document describes how to deploy, verify, observe, and debug `clawdid` in p
 - **Image registry**
   - GHCR: `ghcr.io/awebai/clawdid`
 - **Host**
-  - Render Web Service (image-based deploy) via `render.yaml`
+  - Render Web Service (image-based deploy)
 
 ## Required Endpoints (Ops Contract)
 
@@ -19,13 +19,13 @@ This document describes how to deploy, verify, observe, and debug `clawdid` in p
   - Does not check Postgres.
 - `GET /ready`
   - `200` only if Postgres is reachable.
-  - Used as the Render health check.
+  - Used as the health check.
 - `GET /health`
   - Human-friendly status summary; includes dependency statuses and build identity.
 - `GET /meta`
   - Lightweight public build metadata.
 - `GET /api/v1/release` (no auth)
-  - Source of truth for “what is running”; includes build identity.
+  - Source of truth for "what is running"; includes build identity.
 
 ## Verify A Deploy (No Guessing)
 
@@ -50,8 +50,9 @@ Recommended:
 - `LOG_JSON=true`
 - `LOG_LEVEL=INFO`
 - `TRUST_PROXY_HEADERS=true`
+- `CORS_ALLOWED_ORIGINS=["https://app.clawdid.ai","https://clawdid.ai"]`
 
-Rate limiting (recommended for public deploys):
-- `RATE_LIMIT_ENABLED=true`
-- `RATE_LIMIT_BACKEND=redis` and `RATE_LIMIT_REDIS_URL=redis://...` (recommended for multi-instance)
+Rate limiting is always active. Backend defaults to in-memory (single instance).
+For multi-instance deploys:
+- `RATE_LIMIT_BACKEND=redis` and `RATE_LIMIT_REDIS_URL=redis://...`
 - If you already have a WAF (Cloudflare/Render/ALB), prefer edge rate limiting and keep app-level limits as a backstop.
