@@ -56,3 +56,17 @@ Rate limiting is always active. Backend defaults to in-memory (single instance).
 For multi-instance deploys:
 - `RATE_LIMIT_BACKEND=redis` and `RATE_LIMIT_REDIS_URL=redis://...`
 - If you already have a WAF (Cloudflare/Render/ALB), prefer edge rate limiting and keep app-level limits as a backstop.
+
+## Frontend (SPA) Build
+
+The SPA is a static Vite build deployed separately (e.g. at `app.clawdid.ai`).
+
+Build for production:
+```
+cd frontend
+VITE_CLAWDID_API_BASE=https://api.clawdid.ai npm run build
+```
+
+Output goes to `frontend/dist/`. Deploy as static files.
+
+If `VITE_CLAWDID_API_BASE` is not set, the SPA defaults to `http://127.0.0.1:18111` (local dev).
