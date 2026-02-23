@@ -22,7 +22,7 @@ export default function CopyButton({ value, label = 'Copy' }: { value: string; l
     <button
       type="button"
       onClick={onCopy}
-      className="rounded-md border border-slate-800/80 bg-slate-950/60 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800/40 disabled:opacity-60"
+      className="rounded-md border border-[rgba(148,163,184,0.28)] bg-slate-950/60 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800/40 disabled:opacity-60"
       disabled={!value}
     >
       {status === 'copied' ? 'Copied' : status === 'failed' ? 'Copy failed' : label}

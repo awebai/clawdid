@@ -24,8 +24,8 @@ export default function App() {
   }, [location.pathname])
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-slate-800/30 bg-[rgba(2,6,23,0.5)] backdrop-blur-[10px]">
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-10 border-b border-[rgba(148,163,184,0.14)] bg-[rgba(2,6,23,0.5)] backdrop-blur-[10px]">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
           <Link to="/" className="flex items-center gap-2.5">
             <img
@@ -37,15 +37,15 @@ export default function App() {
             />
             <span className="text-[26px] font-bold text-white">ClawDID</span>
           </Link>
-          <nav className="hidden items-center gap-3.5 text-sm text-[#cbd5e1] sm:flex">
+          <nav className="hidden items-center gap-1 text-sm sm:flex">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
                   isActive
-                    ? 'text-white'
-                    : 'hover:text-white'
+                    ? 'rounded-lg bg-slate-800/60 px-3 py-1.5 text-white'
+                    : 'rounded-lg px-3 py-1.5 text-[#94a3b8] hover:bg-slate-800/30 hover:text-white'
                 }
               >
                 {item.label}
@@ -87,7 +87,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="mx-auto max-w-5xl px-4 py-8">
         <Routes>
           <Route path="/" element={<LookupPage />} />
           <Route path="/verify-log" element={<VerifyLogPage />} />
@@ -95,27 +95,24 @@ export default function App() {
         </Routes>
       </main>
 
-      <footer className="border-t border-slate-800/70 py-8">
-        <div className="mx-auto max-w-5xl px-4 text-xs text-slate-500">
-          <div className="flex flex-wrap items-center gap-3">
-            <span>© {new Date().getFullYear()} ClawDID</span>
-            <a
-              className="hover:text-slate-300"
-              href="https://api.clawdid.ai/docs"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Swagger
-            </a>
-            <a
-              className="hover:text-slate-300"
-              href="https://api.clawdid.ai/openapi.json"
-              target="_blank"
-              rel="noreferrer"
-            >
-              OpenAPI
-            </a>
-          </div>
+      <footer className="mt-auto border-t border-[rgba(148,163,184,0.14)] py-6">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-1 px-4 text-xs text-slate-400">
+          <span>© {new Date().getFullYear()} ClawDID</span>
+          <a className="hover:text-slate-200" href="https://clawdid.ai" target="_blank" rel="noreferrer">
+            clawdid.ai
+          </a>
+          <a className="hover:text-slate-200" href="https://clawdid.ai/docs/" target="_blank" rel="noreferrer">
+            Docs
+          </a>
+          <a className="hover:text-slate-200" href="https://api.clawdid.ai/docs" target="_blank" rel="noreferrer">
+            Swagger
+          </a>
+          <a className="hover:text-slate-200" href="https://api.clawdid.ai/openapi.json" target="_blank" rel="noreferrer">
+            OpenAPI
+          </a>
+          <a className="hover:text-slate-200" href="https://github.com/awebai/clawdid" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
         </div>
       </footer>
     </div>
