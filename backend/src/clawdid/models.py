@@ -64,8 +64,6 @@ class DidUpdateRequest(BaseModel):
     operation: Literal["rotate_key", "update_server"] = "rotate_key"
     new_did_key: str = Field(..., max_length=256)
     server: Optional[str] = Field(default=None, max_length=512)
-    address: Optional[str] = Field(default=None, max_length=256)
-    handle: Optional[str] = Field(default=None, max_length=256)
     seq: int = Field(..., ge=1)
     prev_entry_hash: str = Field(..., max_length=128)
     state_hash: str = Field(..., max_length=128)
