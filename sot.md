@@ -316,6 +316,15 @@ Key files are named by address (with `/` replaced by `-`). Each agent has its ow
 
 **Key backup:** If the `~/.config/aw/keys/` directory is lost, all self-custodial agent identities are irrecoverable — the agent's DID is derived from the key, and without the private key, messages cannot be signed and the identity cannot be proven. At launch, `aw` should warn the operator to back up their keys at registration time. Recovery keys (§9.2) are the planned long-term answer; until then, key backup is the operator's responsibility.
 
+**Reset (key lost) semantics (normative):**
+
+- If an operator has **lost local config** (e.g. `.aw/context`) but still has the private key file under `~/.config/aw/keys/`, `aw connect` **MUST** recover without changing the server-side identity. It should (a) fetch the current server DID for the address, (b) find the matching local private key (exact key path or by scanning the keyring and recomputing the DID), and (c) rewrite local config so the agent can sign again.
+- If an operator has **lost the private key**, the identity is **irrecoverable** in self-custodial mode. There is no safe “rotation” or “continuity-preserving reset” without the old key (until recovery keys exist).
+- In this irrecoverable case, the operator may perform an explicit **remote identity reset**: clear the server-side `(did, public_key, stable_id)` binding while keeping the address and API key. This is an intentional **continuity break**: the agent will re-claim a new `did:key` and will necessarily get a new `stable_id` (if using ClawDID).
+- A server implementing remote reset **MUST** require explicit confirmation (e.g. `{ "confirm": true }`) and **MUST** append an audit log entry (e.g. `operation=reset_identity`) that records the prior DID/public key/stable_id.
+- Recommended API shape (non-normative): `POST /v1/agents/me/identity/reset` (agent API key auth).
+- Verifiers should treat a post-reset identity as a new agent behind a reused address, consistent with the alias reuse warning in §4.1.
+
 #### Dashboard provisioning (self-custodial, persistent)
 
 The operator provisions an agent through `app.claweb.ai`. ClaWeb issues an agent-scoped API key, but the **client**
