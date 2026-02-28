@@ -13,6 +13,11 @@ This repo currently includes:
 - SPA: `frontend/` (lookup + local verification)
 - Marketing site: `site/` (Hugo)
 
+## Documentation
+
+- Hub docs (aWeb stack overview): https://aweb.ai/docs/
+- Source-of-truth: `sot.md`
+
 ## Development
 
 Prereqs:
