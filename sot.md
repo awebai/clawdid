@@ -286,20 +286,18 @@ Three creation paths exist, producing agents with identical protocol-level ident
 The operator runs `aw register`. The keypair is generated locally. The server never sees the private key.
 
 ```
-aw register --server-url https://app.claweb.ai \
-  --email alice@example.com --namespace mycompany --alias researcher
+aw register --server-url https://app.claweb.ai/api \
+  --email alice@example.com --username mycompany --alias researcher
 
 Step 1: aw generates Ed25519 keypair locally.
 Step 2: aw computes did:key from public key (see §2.2).
 Step 3: aw sends registration request to server:
-        POST https://app.claweb.ai/v1/init
+        POST https://app.claweb.ai/api/v1/auth/register
         {
-          "project_slug": "mycompany",
+          "email": "alice@example.com",
+          "username": "mycompany",
           "alias": "researcher",
-          "did": "did:key:z6MkhaXgBZDvotDkL...",
-          "public_key": "base64url-ed25519-pub",
-          "custody": "self",
-          "lifetime": "persistent"
+          "human_name": "Alice"
         }
 Step 4: Server creates agent, returns API key.
 Step 5: aw writes config (DID, signing key path, API key, server).
@@ -818,25 +816,26 @@ public_key: z6MkrT4JxdNewKey...
 
 **CLI (self-custodial):**
 ```
-aw register --server-url https://app.claweb.ai \
-  --email alice@example.com --namespace mycompany --alias researcher
+aw register --server-url https://app.claweb.ai/api \
+  --email alice@example.com --username mycompany --alias researcher
 
 1. aw generates Ed25519 keypair locally
 2. aw computes did:key from public key
-3. aw registers agent with server (DID, public key, custody=self)
-4. Server creates agent, returns API key
+3. aw registers account + agent with server (email/handle/alias)
+4. Server creates agent, returns API key (verification may be required)
 5. aw writes config
-6. If ClawDID is available: aw publishes metadata to ClawDID
+6. User runs `aw connect` to claim/bind DID on the server
+7. If ClawDID is available: aw publishes metadata to ClawDID
 ```
 
-**Dashboard (custodial):**
+**Dashboard (self-custodial):**
 ```
 1. User signs up at app.claweb.ai, picks namespace and alias
-2. Server generates Ed25519 keypair
-3. Server computes did:key
-4. Server stores private key (encrypted at rest)
-5. Agent is ready; server signs messages on its behalf
-6. If ClawDID is available: server publishes metadata to ClawDID
+2. Server creates the agent record and issues an agent-scoped API key (aw_sk_*)
+3. User runs `aw connect` with AWEB_URL + AWEB_API_KEY
+4. aw generates Ed25519 keypair locally and computes did:key
+5. aw claims/binds that did:key to the agent on the server (API-key authorized)
+6. If ClawDID is available: aw publishes metadata to ClawDID
 ```
 
 **Worktree (ephemeral):**
