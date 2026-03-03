@@ -1,7 +1,7 @@
 :root {
   color-scheme: dark;
   --bg: #070a12;
-  --panel: rgba(8, 14, 30, 0.65);
+  --panel: rgba(8, 14, 30, 0.85);
   --border: rgba(148, 163, 184, 0.14);
   --text: #e6e8f2;
   --muted: #94a3b8;
@@ -188,7 +188,7 @@ code {
 }
 
 @media (min-width: 900px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
+  .grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 .card {
@@ -212,6 +212,30 @@ code {
   font-size: 14px;
 }
 
+.card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card ul li {
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.5;
+  padding-left: 12px;
+  position: relative;
+}
+
+.card ul li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: var(--muted);
+}
+
 .card .steps {
   margin: 0;
   padding: 0;
@@ -225,28 +249,21 @@ code {
 .card .steps li {
   counter-increment: step;
   position: relative;
-  padding-left: 38px;
+  padding-left: 28px;
   color: #cbd5e1;
   font-size: 15px;
   line-height: 1.65;
 }
 
 .card .steps li::before {
-  content: counter(step);
+  content: counter(step) ".";
   position: absolute;
   left: 0;
-  top: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--brand-dim);
-  border: 1px solid rgba(232, 102, 60, 0.4);
+  top: 0;
   color: var(--brand);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.65;
 }
 
 
